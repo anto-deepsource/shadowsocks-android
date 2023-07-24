@@ -42,7 +42,7 @@ class TileService : BaseTileService(), ShadowsocksConnection.Callback {
 
     private val connection = ShadowsocksConnection()
     override fun stateChanged(state: BaseService.State, profileName: String?, msg: String?) =
-            updateTile(state) { profileName }
+        updateTile(state) { profileName }
     override fun onServiceConnected(service: IShadowsocksService) {
         updateTile(BaseService.State.values()[service.state]) { service.profileName }
         if (tapPending) {
@@ -94,10 +94,14 @@ class TileService : BaseTileService(), ShadowsocksConnection.Callback {
 
     private fun toggle() {
         val service = connection.service
-        if (service == null) tapPending = true else BaseService.State.values()[service.state].let { state ->
-            when {
-                state.canStop -> Core.stopService()
-                state == BaseService.State.Stopped -> Core.startService()
+        if (service == null) {
+            tapPending = true
+        } else {
+            BaseService.State.values()[service.state].let { state ->
+                when {
+                    state.canStop -> Core.stopService()
+                    state == BaseService.State.Stopped -> Core.startService()
+                }
             }
         }
     }
