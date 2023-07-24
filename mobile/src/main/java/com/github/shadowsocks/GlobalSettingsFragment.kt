@@ -29,7 +29,7 @@ import com.github.shadowsocks.widget.ListHolderListener
 
 class GlobalSettingsFragment : ToolbarFragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
-            inflater.inflate(R.layout.layout_global_settings, container, false)
+        inflater.inflate(R.layout.layout_global_settings, container, false)
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)

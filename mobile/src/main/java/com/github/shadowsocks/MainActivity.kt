@@ -56,10 +56,12 @@ import com.google.android.material.snackbar.Snackbar
 import com.google.firebase.analytics.ktx.analytics
 import com.google.firebase.analytics.ktx.logEvent
 import com.google.firebase.ktx.Firebase
-import timber.log.Timber
 
-class MainActivity : AppCompatActivity(), ShadowsocksConnection.Callback, OnPreferenceDataStoreChangeListener,
-        NavigationView.OnNavigationItemSelectedListener {
+class MainActivity :
+    AppCompatActivity(),
+    ShadowsocksConnection.Callback,
+    OnPreferenceDataStoreChangeListener,
+    NavigationView.OnNavigationItemSelectedListener {
     companion object {
         var stateListener: ((BaseService.State) -> Unit)? = null
     }
@@ -78,12 +80,18 @@ class MainActivity : AppCompatActivity(), ShadowsocksConnection.Callback, OnPref
     private val customTabsIntent by lazy {
         CustomTabsIntent.Builder().apply {
             setColorScheme(CustomTabsIntent.COLOR_SCHEME_SYSTEM)
-            setColorSchemeParams(CustomTabsIntent.COLOR_SCHEME_LIGHT, CustomTabColorSchemeParams.Builder().apply {
-                setToolbarColor(ContextCompat.getColor(this@MainActivity, R.color.light_color_primary))
-            }.build())
-            setColorSchemeParams(CustomTabsIntent.COLOR_SCHEME_DARK, CustomTabColorSchemeParams.Builder().apply {
-                setToolbarColor(ContextCompat.getColor(this@MainActivity, R.color.dark_color_primary))
-            }.build())
+            setColorSchemeParams(
+                CustomTabsIntent.COLOR_SCHEME_LIGHT,
+                CustomTabColorSchemeParams.Builder().apply {
+                    setToolbarColor(ContextCompat.getColor(this@MainActivity, R.color.light_color_primary))
+                }.build(),
+            )
+            setColorSchemeParams(
+                CustomTabsIntent.COLOR_SCHEME_DARK,
+                CustomTabColorSchemeParams.Builder().apply {
+                    setToolbarColor(ContextCompat.getColor(this@MainActivity, R.color.dark_color_primary))
+                }.build(),
+            )
         }.build()
     }
     fun launchUrl(uri: String) = try {
@@ -95,13 +103,19 @@ class MainActivity : AppCompatActivity(), ShadowsocksConnection.Callback, OnPref
     // service
     var state = BaseService.State.Idle
     override fun stateChanged(state: BaseService.State, profileName: String?, msg: String?) =
-            changeState(state, msg)
+        changeState(state, msg)
     override fun trafficUpdated(profileId: Long, stats: TrafficStats) {
-        if (profileId == 0L) this@MainActivity.stats.updateTraffic(
-                stats.txRate, stats.rxRate, stats.txTotal, stats.rxTotal)
+        if (profileId == 0L) {
+            this@MainActivity.stats.updateTraffic(
+                stats.txRate,
+                stats.rxRate,
+                stats.txTotal,
+                stats.rxTotal,
+            )
+        }
         if (state != BaseService.State.Stopping) {
             (supportFragmentManager.findFragmentById(R.id.fragment_holder) as? ProfilesFragment)
-                    ?.onTrafficUpdated(profileId, stats)
+                ?.onTrafficUpdated(profileId, stats)
         }
     }
     override fun trafficPersisted(profileId: Long) {
@@ -113,18 +127,20 @@ class MainActivity : AppCompatActivity(), ShadowsocksConnection.Callback, OnPref
         stats.changeState(state, animate)
         if (msg != null) snackbar(getString(R.string.vpn_error, msg)).show()
         this.state = state
-        ProfilesFragment.instance?.profilesAdapter?.notifyDataSetChanged()  // refresh button enabled state
+        ProfilesFragment.instance?.profilesAdapter?.notifyDataSetChanged() // refresh button enabled state
         stateListener?.invoke(state)
     }
 
     private fun toggle() = if (state.canStop) Core.stopService() else connect.launch(null)
 
     private val connection = ShadowsocksConnection(true)
-    override fun onServiceConnected(service: IShadowsocksService) = changeState(try {
-        BaseService.State.values()[service.state]
-    } catch (_: RemoteException) {
-        BaseService.State.Idle
-    })
+    override fun onServiceConnected(service: IShadowsocksService) = changeState(
+        try {
+            BaseService.State.values()[service.state]
+        } catch (_: RemoteException) {
+            BaseService.State.Idle
+        },
+    )
     override fun onServiceDisconnected() = changeState(BaseService.State.Idle)
     override fun onBinderDied() {
         connection.disconnect(this)
@@ -172,12 +188,12 @@ class MainActivity : AppCompatActivity(), ShadowsocksConnection.Callback, OnPref
         ViewCompat.setOnApplyWindowInsetsListener(fab) { view, insets ->
             view.updateLayoutParams<ViewGroup.MarginLayoutParams> {
                 bottomMargin = insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom +
-                        resources.getDimensionPixelOffset(R.dimen.mtrl_bottomappbar_fab_bottom_margin)
+                    resources.getDimensionPixelOffset(R.dimen.mtrl_bottomappbar_fab_bottom_margin)
             }
             insets
         }
 
-        changeState(BaseService.State.Idle, animate = false)    // reset everything to init state
+        changeState(BaseService.State.Idle, animate = false) // reset everything to init state
         connection.connect(this, this)
         DataStore.publicStore.registerChangeListener(this)
     }
@@ -197,11 +213,13 @@ class MainActivity : AppCompatActivity(), ShadowsocksConnection.Callback, OnPref
     }
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
-        if (item.isChecked) drawer.closeDrawers() else {
+        if (item.isChecked) {
+            drawer.closeDrawers()
+        } else {
             when (item.itemId) {
                 R.id.profiles -> {
                     displayFragment(ProfilesFragment())
-                    connection.bandwidthTimeout = connection.bandwidthTimeout   // request stats update
+                    connection.bandwidthTimeout = connection.bandwidthTimeout // request stats update
                 }
                 R.id.globalSettings -> displayFragment(GlobalSettingsFragment())
                 R.id.about -> {

@@ -61,8 +61,8 @@ sealed class DnsResolverCompat {
         private const val TTL = 120L
 
         fun prepareDnsResponse(request: Message) = Message(request.header.id).apply {
-            header.setFlag(Flags.QR.toInt())    // this is a response
-            header.setFlag(Flags.RA.toInt())    // recursion available
+            header.setFlag(Flags.QR.toInt()) // this is a response
+            header.setFlag(Flags.RA.toInt()) // recursion available
             if (request.header.getFlag(Flags.RD.toInt())) header.setFlag(Flags.RD.toInt())
             request.question?.also { addRecord(it, Section.QUESTION) }
         }
@@ -80,21 +80,27 @@ sealed class DnsResolverCompat {
          * See also: https://issuetracker.google.com/issues/133874590
          */
         private val unboundedIO by lazy {
-            if (Core.activity.isLowRamDevice) Dispatchers.IO
-            else Executors.newCachedThreadPool().asCoroutineDispatcher()
+            if (Core.activity.isLowRamDevice) {
+                Dispatchers.IO
+            } else {
+                Executors.newCachedThreadPool().asCoroutineDispatcher()
+            }
         }
 
         override suspend fun resolve(network: Network, host: String) =
-                withContext(unboundedIO) { network.getAllByName(host) }
+            withContext(unboundedIO) { network.getAllByName(host) }
         override suspend fun resolveOnActiveNetwork(host: String) =
-                withContext(unboundedIO) { InetAddress.getAllByName(host) }
+            withContext(unboundedIO) { InetAddress.getAllByName(host) }
 
-        private suspend fun resolveRaw(query: ByteArray, networkSpecified: Boolean = true,
-                                       hostResolver: suspend (String) -> Array<InetAddress>): ByteArray {
+        private suspend fun resolveRaw(
+            query: ByteArray,
+            networkSpecified: Boolean = true,
+            hostResolver: suspend (String) -> Array<InetAddress>,
+        ): ByteArray {
             val request = try {
                 Message(query)
             } catch (e: IOException) {
-                throw UnsupportedOperationException(e)  // unrecognized packet
+                throw UnsupportedOperationException(e) // unrecognized packet
             }
             when (val opcode = request.header.opcode) {
                 Opcode.QUERY -> { }
@@ -110,7 +116,7 @@ sealed class DnsResolverCompat {
                     val ip = try {
                         ReverseMap.fromName(question.name)
                     } catch (e: IOException) {
-                        throw UnsupportedOperationException(e)  // unrecognized PTR name
+                        throw UnsupportedOperationException(e) // unrecognized PTR name
                     }
                     val hostname = withContext(unboundedIO) { ip.hostName }.let { hostname ->
                         if (hostname == ip.hostAddress) null else Name.fromString("$hostname.")
@@ -125,17 +131,20 @@ sealed class DnsResolverCompat {
             return prepareDnsResponse(request).apply {
                 for (address in hostResolver(host).asIterable().run {
                     if (isIpv6) filterIsInstance<Inet6Address>() else filterIsInstance<Inet4Address>()
-                }) addRecord(when (address) {
-                    is Inet4Address -> ARecord(question.name, DClass.IN, TTL, address)
-                    is Inet6Address -> AAAARecord(question.name, DClass.IN, TTL, address)
-                    else -> error("Unsupported address $address")
-                }, Section.ANSWER)
+                }) addRecord(
+                    when (address) {
+                        is Inet4Address -> ARecord(question.name, DClass.IN, TTL, address)
+                        is Inet6Address -> AAAARecord(question.name, DClass.IN, TTL, address)
+                        else -> error("Unsupported address $address")
+                    },
+                    Section.ANSWER,
+                )
             }.toWire()
         }
         override suspend fun resolveRaw(network: Network, query: ByteArray) =
-                resolveRaw(query) { resolve(network, it) }
+            resolveRaw(query) { resolve(network, it) }
         override suspend fun resolveRawOnActiveNetwork(query: ByteArray) =
-                resolveRaw(query, false, this::resolveOnActiveNetwork)
+            resolveRaw(query, false, this::resolveOnActiveNetwork)
     }
 
     @TargetApi(29)
@@ -152,12 +161,18 @@ sealed class DnsResolverCompat {
                 val signal = CancellationSignal()
                 cont.invokeOnCancellation { signal.cancel() }
                 // retry should be handled by client instead
-                DnsResolver.getInstance().query(network, host, DnsResolver.FLAG_NO_RETRY, this,
-                        signal, object : DnsResolver.Callback<Collection<InetAddress>> {
-                    override fun onAnswer(answer: Collection<InetAddress>, rcode: Int) =
+                DnsResolver.getInstance().query(
+                    network,
+                    host,
+                    DnsResolver.FLAG_NO_RETRY,
+                    this,
+                    signal,
+                    object : DnsResolver.Callback<Collection<InetAddress>> {
+                        override fun onAnswer(answer: Collection<InetAddress>, rcode: Int) =
                             cont.resume(answer.toTypedArray())
-                    override fun onError(error: DnsResolver.DnsException) = cont.resumeWithException(IOException(error))
-                })
+                        override fun onError(error: DnsResolver.DnsException) = cont.resumeWithException(IOException(error))
+                    },
+                )
             }
         }
         override suspend fun resolveOnActiveNetwork(host: String) = resolve(activeNetwork, host)
@@ -166,11 +181,17 @@ sealed class DnsResolverCompat {
             return suspendCancellableCoroutine { cont ->
                 val signal = CancellationSignal()
                 cont.invokeOnCancellation { signal.cancel() }
-                DnsResolver.getInstance().rawQuery(network, query, DnsResolver.FLAG_NO_RETRY, this,
-                        signal, object : DnsResolver.Callback<ByteArray> {
-                    override fun onAnswer(answer: ByteArray, rcode: Int) = cont.resume(answer)
-                    override fun onError(error: DnsResolver.DnsException) = cont.resumeWithException(IOException(error))
-                })
+                DnsResolver.getInstance().rawQuery(
+                    network,
+                    query,
+                    DnsResolver.FLAG_NO_RETRY,
+                    this,
+                    signal,
+                    object : DnsResolver.Callback<ByteArray> {
+                        override fun onAnswer(answer: ByteArray, rcode: Int) = cont.resume(answer)
+                        override fun onError(error: DnsResolver.DnsException) = cont.resumeWithException(IOException(error))
+                    },
+                )
             }
         }
         override suspend fun resolveRawOnActiveNetwork(query: ByteArray) = resolveRaw(activeNetwork, query)
