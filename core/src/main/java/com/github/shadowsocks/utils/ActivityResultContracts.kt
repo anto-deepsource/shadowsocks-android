@@ -33,22 +33,26 @@ import timber.log.Timber
 private val jsonMimeTypes = arrayOf("application/*", "text/*")
 
 object OpenJson : ActivityResultContracts.GetMultipleContents() {
-    override fun createIntent(context: Context, input: String) = super.createIntent(context,
-            jsonMimeTypes.first()).apply { putExtra(Intent.EXTRA_MIME_TYPES, jsonMimeTypes) }
+    override fun createIntent(context: Context, input: String) = super.createIntent(
+        context,
+        jsonMimeTypes.first(),
+    ).apply { putExtra(Intent.EXTRA_MIME_TYPES, jsonMimeTypes) }
 }
 
 object SaveJson : ActivityResultContracts.CreateDocument("application/json") {
     override fun createIntent(context: Context, input: String) =
-            super.createIntent(context, "profiles.json")
+        super.createIntent(context, "profiles.json")
 }
 
 class StartService : ActivityResultContract<Void?, Boolean>() {
     private var cachedIntent: Intent? = null
 
     override fun getSynchronousResult(context: Context, input: Void?): SynchronousResult<Boolean>? {
-        if (DataStore.serviceMode == Key.modeVpn) VpnService.prepare(context)?.let { intent ->
-            cachedIntent = intent
-            return null
+        if (DataStore.serviceMode == Key.modeVpn) {
+            VpnService.prepare(context)?.let { intent ->
+                cachedIntent = intent
+                return null
+            }
         }
         Core.startService()
         return SynchronousResult(false)

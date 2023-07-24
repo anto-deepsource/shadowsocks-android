@@ -45,8 +45,9 @@ import java.io.File
 import java.io.FileNotFoundException
 
 object PluginManager {
-    class PluginNotFoundException(private val plugin: String) : FileNotFoundException(plugin),
-            BaseService.ExpectedException {
+    class PluginNotFoundException(private val plugin: String) :
+        FileNotFoundException(plugin),
+        BaseService.ExpectedException {
         override fun getLocalizedMessage() = app.getString(com.github.shadowsocks.core.R.string.plugin_unknown, plugin)
     }
 
@@ -61,8 +62,9 @@ object PluginManager {
      */
     val trustedSignatures by lazy {
         Core.packageInfo.signaturesCompat.toSet() +
-                Signature(Base64.decode(  // @Mygod
-                """
+            Signature(
+                Base64.decode( // @Mygod
+                    """
                     |MIIDWzCCAkOgAwIBAgIEUzfv8DANBgkqhkiG9w0BAQsFADBdMQswCQYDVQQGEwJD
                     |TjEOMAwGA1UECBMFTXlnb2QxDjAMBgNVBAcTBU15Z29kMQ4wDAYDVQQKEwVNeWdv
                     |ZDEOMAwGA1UECxMFTXlnb2QxDjAMBgNVBAMTBU15Z29kMCAXDTE0MDUwMjA5MjQx
@@ -81,9 +83,13 @@ object PluginManager {
                     |RSo6EooQ7+NBejOXysqIF1q0BJs8Y5s/CaTOmgbL7uPCkzArB6SS/hzXgDk5gw6v
                     |wkGeOtzcj1DlbUTvt1s5GlnwBTGUmkbLx+YUje+n+IBgMbohLUDYBtUHylRVgMsc
                     |1WS67kDqeJiiQZvrxvyW6CZZ/MIGI+uAkkj3DqJpaZirkwPgvpcOIrjZy0uFvQM=
-                  """, Base64.DEFAULT)) +
-                Signature(Base64.decode( // @madeye
-                """
+                  """,
+                    Base64.DEFAULT,
+                ),
+            ) +
+            Signature(
+                Base64.decode( // @madeye
+                    """
                     |MIICQzCCAaygAwIBAgIETV9OhjANBgkqhkiG9w0BAQUFADBmMQswCQYDVQQGEwJjbjERMA8GA1UE
                     |CBMIU2hhbmdoYWkxDzANBgNVBAcTBlB1ZG9uZzEUMBIGA1UEChMLRnVkYW4gVW5pdi4xDDAKBgNV
                     |BAsTA1BQSTEPMA0GA1UEAxMGTWF4IEx2MB4XDTExMDIxOTA1MDA1NFoXDTM2MDIxMzA1MDA1NFow
@@ -95,16 +101,21 @@ object PluginManager {
                     |Iqonxpwk2ay+Dm5RhFfZyG9SatM/JNFx2OdErU16WzuK1ItotXGVJaxCZv3u/tTwM5aaMACGED5n
                     |AvHaDGCWynY74oDAopM4liF/yLe1wmZDu6Zo/7fXrH+T03LBgj2fcIkUfN1AA4dvnBo8XWAm9VrI
                     |1iNuLIssdhDz3IL9Yg==
-                  """, Base64.DEFAULT))
+                  """,
+                    Base64.DEFAULT,
+                ),
+            )
     }
 
     private var receiver: BroadcastReceiver? = null
     private var cachedPlugins: PluginList? = null
     fun fetchPlugins() = synchronized(this) {
-        if (receiver == null) receiver = app.listenForPackageChanges {
-            synchronized(this) {
-                receiver = null
-                cachedPlugins = null
+        if (receiver == null) {
+            receiver = app.listenForPackageChanges {
+                synchronized(this) {
+                    receiver = null
+                    cachedPlugins = null
+                }
             }
         }
         if (cachedPlugins == null) cachedPlugins = PluginList()
@@ -112,16 +123,16 @@ object PluginManager {
     }
 
     private fun buildUri(id: String) = Uri.Builder()
-            .scheme(PluginContract.SCHEME)
-            .authority(PluginContract.AUTHORITY)
-            .path("/$id")
-            .build()
+        .scheme(PluginContract.SCHEME)
+        .authority(PluginContract.AUTHORITY)
+        .path("/$id")
+        .build()
     fun buildIntent(id: String, action: String): Intent = Intent(action, buildUri(id))
 
     data class InitResult(
-            val path: String,
-            val options: PluginOptions,
-            val isV2: Boolean = false,
+        val path: String,
+        val options: PluginOptions,
+        val isV2: Boolean = false,
     )
 
     // the following parts are meant to be used by :bg
@@ -148,8 +159,10 @@ object PluginManager {
             flags = flags or PackageManager.MATCH_DIRECT_BOOT_UNAWARE or PackageManager.MATCH_DIRECT_BOOT_AWARE
         }
         val providers = app.packageManager.queryIntentContentProviders(
-                Intent(PluginContract.ACTION_NATIVE_PLUGIN, buildUri(configuration.selected)), flags)
-                .filter { it.providerInfo.exported }
+            Intent(PluginContract.ACTION_NATIVE_PLUGIN, buildUri(configuration.selected)),
+            flags,
+        )
+            .filter { it.providerInfo.exported }
         if (providers.isEmpty()) return null
         if (providers.size > 1) {
             val message = "Conflicting plugins found from: ${providers.joinToString { it.providerInfo.packageName }}"
@@ -159,7 +172,7 @@ object PluginManager {
         val provider = providers.single().providerInfo
         val options = configuration.getOptions { provider.loadString(PluginContract.METADATA_KEY_DEFAULT_CONFIG) }
         val isV2 = provider.applicationInfo.metaData?.getString(PluginContract.METADATA_KEY_VERSION)
-                ?.substringBefore('.')?.toIntOrNull() ?: 0 >= 2
+            ?.substringBefore('.')?.toIntOrNull() ?: 0 >= 2
         var failure: Throwable? = null
         try {
             initNativeFaster(provider)?.also { return InitResult(it, options, isV2) }
@@ -197,8 +210,12 @@ object PluginManager {
     }
 
     private fun initNativeFast(cr: ContentResolver, options: PluginOptions, uri: Uri): String? {
-        return cr.call(uri, PluginContract.METHOD_GET_EXECUTABLE, null,
-                bundleOf(PluginContract.EXTRA_OPTIONS to options.id))?.getString(PluginContract.EXTRA_ENTRY)?.also {
+        return cr.call(
+            uri,
+            PluginContract.METHOD_GET_EXECUTABLE,
+            null,
+            bundleOf(PluginContract.EXTRA_OPTIONS to options.id),
+        )?.getString(PluginContract.EXTRA_ENTRY)?.also {
             check(File(it).canExecute())
         }
     }
@@ -208,8 +225,10 @@ object PluginManager {
         var initialized = false
         fun entryNotFound(): Nothing = throw IndexOutOfBoundsException("Plugin entry binary not found")
         val pluginDir = File(Core.deviceStorage.noBackupFilesDir, "plugin")
-        (cr.query(uri, arrayOf(PluginContract.COLUMN_PATH, PluginContract.COLUMN_MODE), null, null, null)
-                ?: return null).use { cursor ->
+        (
+            cr.query(uri, arrayOf(PluginContract.COLUMN_PATH, PluginContract.COLUMN_MODE), null, null, null)
+                ?: return null
+            ).use { cursor ->
             if (!cursor.moveToFirst()) entryNotFound()
             pluginDir.deleteRecursively()
             if (!pluginDir.mkdirs()) throw FileNotFoundException("Unable to create plugin directory")
@@ -221,11 +240,14 @@ object PluginManager {
                 cr.openInputStream(uri.buildUpon().path(path).build())!!.use { inStream ->
                     file.outputStream().use { outStream -> inStream.copyTo(outStream) }
                 }
-                Os.chmod(file.absolutePath, when (cursor.getType(1)) {
-                    Cursor.FIELD_TYPE_INTEGER -> cursor.getInt(1)
-                    Cursor.FIELD_TYPE_STRING -> cursor.getString(1).toInt(8)
-                    else -> throw IllegalArgumentException("File mode should be of type int")
-                })
+                Os.chmod(
+                    file.absolutePath,
+                    when (cursor.getType(1)) {
+                        Cursor.FIELD_TYPE_INTEGER -> cursor.getInt(1)
+                        Cursor.FIELD_TYPE_STRING -> cursor.getString(1).toInt(8)
+                        else -> throw IllegalArgumentException("File mode should be of type int")
+                    },
+                )
                 if (path == options.id) initialized = true
             } while (cursor.moveToNext())
         }

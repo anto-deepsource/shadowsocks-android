@@ -45,7 +45,7 @@ fun Project.setupCommon() {
             informational += "MissingTranslation"
         }
         (this as ExtensionAware).extensions.getByName<KotlinJvmOptions>("kotlinOptions").jvmTarget =
-                javaVersion.toString()
+            javaVersion.toString()
     }
 
     dependencies {
@@ -78,20 +78,22 @@ fun Project.setupApp() {
     setupCore()
 
     android.apply {
-        defaultConfig.resourceConfigurations.addAll(listOf(
-            "ar",
-            "de",
-            "es",
-            "fa",
-            "fr",
-            "ja",
-            "ko",
-            "ru",
-            "tr",
-            "uk",
-            "zh-rCN",
-            "zh-rTW",
-        ))
+        defaultConfig.resourceConfigurations.addAll(
+            listOf(
+                "ar",
+                "de",
+                "es",
+                "fa",
+                "fr",
+                "ja",
+                "ko",
+                "ru",
+                "tr",
+                "uk",
+                "zh-rCN",
+                "zh-rTW",
+            ),
+        )
         buildTypes {
             getByName("debug") {
                 isPseudoLocalesEnabled = true
@@ -112,10 +114,12 @@ fun Project.setupApp() {
 
     dependencies.add("implementation", project(":core"))
 
-    if (currentFlavor == "release") (android as AbstractAppExtension).applicationVariants.all {
-        for (output in outputs) {
-            abiCodes[(output as ApkVariantOutputImpl).getFilter(VariantOutput.ABI)]?.let { offset ->
-                output.versionCodeOverride = versionCode + offset
+    if (currentFlavor == "release") {
+        (android as AbstractAppExtension).applicationVariants.all {
+            for (output in outputs) {
+                abiCodes[(output as ApkVariantOutputImpl).getFilter(VariantOutput.ABI)]?.let { offset ->
+                    output.versionCodeOverride = versionCode + offset
+                }
             }
         }
     }

@@ -43,6 +43,7 @@ abstract class LocalSocketListener(name: String, socketFile: File) : Thread(name
     }
     private val serverSocket = LocalServerSocket(localSocket.fileDescriptor)
     private val closeChannel = Channel<Unit>(1)
+
     @Volatile
     protected var running = true
 
@@ -70,11 +71,13 @@ abstract class LocalSocketListener(name: String, socketFile: File) : Thread(name
         running = false
         localSocket.fileDescriptor?.apply {
             // see also: https://issuetracker.google.com/issues/36945762#comment15
-            if (valid()) try {
-                Os.shutdown(this, OsConstants.SHUT_RDWR)
-            } catch (e: ErrnoException) {
-                // suppress fd inactive or already closed
-                if (e.errno != OsConstants.EBADF && e.errno != OsConstants.ENOTCONN) throw e.rethrowAsSocketException()
+            if (valid()) {
+                try {
+                    Os.shutdown(this, OsConstants.SHUT_RDWR)
+                } catch (e: ErrnoException) {
+                    // suppress fd inactive or already closed
+                    if (e.errno != OsConstants.EBADF && e.errno != OsConstants.ENOTCONN) throw e.rethrowAsSocketException()
+                }
             }
         }
         scope.launch { closeChannel.receive() }
