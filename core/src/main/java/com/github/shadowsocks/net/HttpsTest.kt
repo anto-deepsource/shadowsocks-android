@@ -83,9 +83,13 @@ class HttpsTest : ViewModel() {
         cancelTest()
         status.value = Status.Testing
         val url = URL("https://cp.cloudflare.com")
-        val conn = (if (DataStore.serviceMode != Key.modeVpn) {
-            url.openConnection(Proxy(Proxy.Type.SOCKS, DataStore.proxyAddress))
-        } else url.openConnection()) as HttpURLConnection
+        val conn = (
+            if (DataStore.serviceMode != Key.modeVpn) {
+                url.openConnection(Proxy(Proxy.Type.SOCKS, DataStore.proxyAddress))
+            } else {
+                url.openConnection()
+            }
+            ) as HttpURLConnection
         conn.setRequestProperty("Connection", "close")
         conn.instanceFollowRedirects = false
         conn.useCaches = false
@@ -95,8 +99,11 @@ class HttpsTest : ViewModel() {
                     val start = SystemClock.elapsedRealtime()
                     val code = responseCode
                     val elapsed = SystemClock.elapsedRealtime() - start
-                    if (code == 204 || code == 200 && responseLength == 0L) Status.Success(elapsed)
-                    else Status.Error.UnexpectedResponseCode(code)
+                    if (code == 204 || code == 200 && responseLength == 0L) {
+                        Status.Success(elapsed)
+                    } else {
+                        Status.Error.UnexpectedResponseCode(code)
+                    }
                 } catch (e: IOException) {
                     Status.Error.IOFailure(e)
                 } finally {

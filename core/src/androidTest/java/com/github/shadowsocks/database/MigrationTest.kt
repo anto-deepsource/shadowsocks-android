@@ -36,8 +36,11 @@ class MigrationTest {
     }
 
     @get:Rule
-    val privateDatabase = MigrationTestHelper(InstrumentationRegistry.getInstrumentation(),
-            PrivateDatabase::class.java.canonicalName, FrameworkSQLiteOpenHelperFactory())
+    val privateDatabase = MigrationTestHelper(
+        InstrumentationRegistry.getInstrumentation(),
+        PrivateDatabase::class.java.canonicalName,
+        FrameworkSQLiteOpenHelperFactory(),
+    )
 
     @Test
     @Throws(IOException::class)
@@ -46,6 +49,7 @@ class MigrationTest {
         db.close()
         privateDatabase.runMigrationsAndValidate(TEST_DB, 27, true, PrivateDatabase.Migration27)
     }
+
     @Test
     @Throws(IOException::class)
     fun migrate28() {
