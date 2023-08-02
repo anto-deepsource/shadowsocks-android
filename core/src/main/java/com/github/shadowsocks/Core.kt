@@ -73,7 +73,7 @@ object Core : Configuration.Provider {
     val directBootSupported by lazy {
         Build.VERSION.SDK_INT >= 24 && try {
             app.getSystemService<DevicePolicyManager>()?.storageEncryptionStatus ==
-                    DevicePolicyManager.ENCRYPTION_STATUS_ACTIVE_PER_USER
+                DevicePolicyManager.ENCRYPTION_STATUS_ACTIVE_PER_USER
         } catch (_: RuntimeException) {
             false
         }
@@ -96,11 +96,15 @@ object Core : Configuration.Provider {
     fun init(app: Application, configureClass: KClass<out Any>) {
         this.app = app
         this.configureIntent = {
-            PendingIntent.getActivity(it, 0, Intent(it, configureClass.java)
-                    .setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT), PendingIntent.FLAG_IMMUTABLE)
+            PendingIntent.getActivity(
+                it, 0,
+                Intent(it, configureClass.java)
+                    .setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT),
+                PendingIntent.FLAG_IMMUTABLE,
+            )
         }
 
-        if (Build.VERSION.SDK_INT >= 24) {  // migrate old files
+        if (Build.VERSION.SDK_INT >= 24) { // migrate old files
             deviceStorage.moveDatabaseFrom(app, Key.DB_PUBLIC)
             val old = Acl.getFile(Acl.CUSTOM_RULES_USER, app)
             if (old.canRead()) {
@@ -111,7 +115,7 @@ object Core : Configuration.Provider {
 
         // overhead of debug mode is minimal: https://github.com/Kotlin/kotlinx.coroutines/blob/f528898/docs/debugging.md#debug-mode
         System.setProperty(DEBUG_PROPERTY_NAME, DEBUG_PROPERTY_VALUE_ON)
-        Firebase.initialize(deviceStorage)  // multiple processes needs manual set-up
+        Firebase.initialize(deviceStorage) // multiple processes needs manual set-up
         Timber.plant(object : Timber.DebugTree() {
             override fun log(priority: Int, tag: String?, message: String, t: Throwable?) {
                 if (t == null) {
@@ -150,30 +154,56 @@ object Core : Configuration.Provider {
     }.build()
 
     fun updateNotificationChannels() {
-        if (Build.VERSION.SDK_INT >= 26) @RequiresApi(26) {
-            notification.createNotificationChannels(listOf(
-                    NotificationChannel("service-vpn", app.getText(R.string.service_vpn),
-                            if (Build.VERSION.SDK_INT >= 28) NotificationManager.IMPORTANCE_MIN
-                            else NotificationManager.IMPORTANCE_LOW),   // #1355
-                    NotificationChannel("service-proxy", app.getText(R.string.service_proxy),
-                            NotificationManager.IMPORTANCE_LOW),
-                    NotificationChannel("service-transproxy", app.getText(R.string.service_transproxy),
-                            NotificationManager.IMPORTANCE_LOW),
-                    SubscriptionService.notificationChannel))
-            notification.deleteNotificationChannel("service-nat")   // NAT mode is gone for good
+        if (Build.VERSION.SDK_INT >= 26) {
+            @RequiresApi(26)
+            {
+                notification.createNotificationChannels(
+                    listOf(
+                        NotificationChannel(
+                            "service-vpn",
+                            app.getText(R.string.service_vpn),
+                            if (Build.VERSION.SDK_INT >= 28) {
+                                NotificationManager.IMPORTANCE_MIN
+                            } else {
+                                NotificationManager.IMPORTANCE_LOW
+                            },
+                        ), // #1355
+                        NotificationChannel(
+                            "service-proxy",
+                            app.getText(R.string.service_proxy),
+                            NotificationManager.IMPORTANCE_LOW,
+                        ),
+                        NotificationChannel(
+                            "service-transproxy",
+                            app.getText(R.string.service_transproxy),
+                            NotificationManager.IMPORTANCE_LOW,
+                        ),
+                        SubscriptionService.notificationChannel,
+                    ),
+                )
+                notification.deleteNotificationChannel("service-nat") // NAT mode is gone for good
+            }
         }
     }
 
-    fun getPackageInfo(packageName: String) = app.packageManager.getPackageInfo(packageName,
-            if (Build.VERSION.SDK_INT >= 28) PackageManager.GET_SIGNING_CERTIFICATES
-            else @Suppress("DEPRECATION") PackageManager.GET_SIGNATURES)!!
+    fun getPackageInfo(packageName: String) = app.packageManager.getPackageInfo(
+        packageName,
+        if (Build.VERSION.SDK_INT >= 28) {
+            PackageManager.GET_SIGNING_CERTIFICATES
+        } else {
+            @Suppress("DEPRECATION")
+            PackageManager.GET_SIGNATURES
+        },
+    )!!
 
     fun trySetPrimaryClip(clip: String, isSensitive: Boolean = false) = try {
-        clipboard.setPrimaryClip(ClipData.newPlainText(null, clip).apply {
-            if (isSensitive && Build.VERSION.SDK_INT >= 24) {
-                description.extras = persistableBundleOf(ClipDescription.EXTRA_IS_SENSITIVE to true)
-            }
-        })
+        clipboard.setPrimaryClip(
+            ClipData.newPlainText(null, clip).apply {
+                if (isSensitive && Build.VERSION.SDK_INT >= 24) {
+                    description.extras = persistableBundleOf(ClipDescription.EXTRA_IS_SENSITIVE to true)
+                }
+            },
+        )
         true
     } catch (e: RuntimeException) {
         Timber.d(e)
