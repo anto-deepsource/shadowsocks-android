@@ -33,6 +33,7 @@ import java.net.InetSocketAddress
 
 object DataStore : OnPreferenceDataStoreChangeListener {
     val publicStore = RoomPreferenceDataStore(PublicDatabase.kvPairDao)
+
     // privateStore will only be used as temp storage for ProfileConfigFragment
     val privateStore = RoomPreferenceDataStore(PrivateDatabase.kvPairDao)
 
@@ -53,14 +54,16 @@ object DataStore : OnPreferenceDataStoreChangeListener {
         return if (value != null) {
             publicStore.putString(key, value.toString())
             value
-        } else parsePort(publicStore.getString(key), default + userIndex)
+        } else {
+            parsePort(publicStore.getString(key), default + userIndex)
+        }
     }
 
     var profileId: Long
         get() = publicStore.getLong(Key.id) ?: 0
         set(value) = publicStore.putLong(Key.id, value)
     val persistAcrossReboot get() = publicStore.getBoolean(Key.persistAcrossReboot)
-            ?: BootReceiver.enabled.also { publicStore.putBoolean(Key.persistAcrossReboot, it) }
+        ?: BootReceiver.enabled.also { publicStore.putBoolean(Key.persistAcrossReboot, it) }
     val canToggleLocked: Boolean get() = publicStore.getBoolean(Key.directBootAware) == true
     val directBootAware: Boolean get() = Core.directBootSupported && canToggleLocked
     val serviceMode get() = publicStore.getString(Key.serviceMode) ?: Key.modeVpn

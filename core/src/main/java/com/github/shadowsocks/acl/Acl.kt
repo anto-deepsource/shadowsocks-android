@@ -68,8 +68,13 @@ class Acl {
             set(value) = getFile(CUSTOM_RULES_USER).writeText(value.toString())
         fun save(id: String, acl: Acl) = getFile(id).writeText(acl.toString())
 
-        suspend fun <T> parse(reader: Reader, bypassHostnames: (String) -> T, proxyHostnames: (String) -> T,
-                              urls: ((URL) -> T)? = null, defaultBypass: Boolean = false): Pair<Boolean, List<Subnet>> {
+        suspend fun <T> parse(
+            reader: Reader,
+            bypassHostnames: (String) -> T,
+            proxyHostnames: (String) -> T,
+            urls: ((URL) -> T)? = null,
+            defaultBypass: Boolean = false,
+        ): Pair<Boolean, List<Subnet>> {
             var bypass = defaultBypass
             val bypassSubnets = mutableListOf<Subnet>()
             val proxySubnets = mutableListOf<Subnet>()
@@ -78,28 +83,34 @@ class Acl {
             reader.useLines {
                 for (line in it) {
                     coroutineContext[Job]!!.ensureActive()
-                    val input = (if (urls == null) line else {
-                        val blocks = line.split('#', limit = 2)
-                        val url = networkAclParser.matchEntire(blocks.getOrElse(1) { "" })?.groupValues?.getOrNull(1)
-                        if (url != null) urls(URL(url))
-                        blocks[0]
-                    }).trim()
-                    if (input.getOrNull(0) == '[') when (input) {
-                        "[outbound_block_list]" -> {
-                            hostnames = null
-                            subnets = null
+                    val input = (
+                        if (urls == null) {
+                            line
+                        } else {
+                            val blocks = line.split('#', limit = 2)
+                            val url = networkAclParser.matchEntire(blocks.getOrElse(1) { "" })?.groupValues?.getOrNull(1)
+                            if (url != null) urls(URL(url))
+                            blocks[0]
                         }
-                        "[black_list]", "[bypass_list]" -> {
-                            hostnames = bypassHostnames
-                            subnets = bypassSubnets
+                        ).trim()
+                    if (input.getOrNull(0) == '[') {
+                        when (input) {
+                            "[outbound_block_list]" -> {
+                                hostnames = null
+                                subnets = null
+                            }
+                            "[black_list]", "[bypass_list]" -> {
+                                hostnames = bypassHostnames
+                                subnets = bypassSubnets
+                            }
+                            "[white_list]", "[proxy_list]" -> {
+                                hostnames = proxyHostnames
+                                subnets = proxySubnets
+                            }
+                            "[reject_all]", "[bypass_all]" -> bypass = true
+                            "[accept_all]", "[proxy_all]" -> bypass = false
+                            else -> error("Unrecognized block: $input")
                         }
-                        "[white_list]", "[proxy_list]" -> {
-                            hostnames = proxyHostnames
-                            subnets = proxySubnets
-                        }
-                        "[reject_all]", "[bypass_all]" -> bypass = true
-                        "[accept_all]", "[proxy_all]" -> bypass = false
-                        else -> error("Unrecognized block: $input")
                     } else if (subnets != null && input.isNotEmpty()) {
                         val subnet = Subnet.fromString(input)
                         if (subnet == null) hostnames!!(input) else subnets!!.add(subnet)
@@ -152,20 +163,27 @@ class Acl {
     } catch (_: IOException) { this }
 
     suspend fun flatten(depth: Int, connect: suspend (URL) -> URLConnection): Acl {
-        if (depth > 0) for (url in urls.asIterable()) {
-            val child = Acl().fromReader(connect(url).also {
-                (it as? HttpURLConnection)?.instanceFollowRedirects = true
-            }.getInputStream().bufferedReader(), bypass)
-            child.flatten(depth - 1, connect)
-            if (bypass != child.bypass) {
-                Timber.w("Imported network ACL has a conflicting mode set. " +
-                        "This will probably not work as intended. URL: $url")
-                child.subnets.clear() // subnets for the different mode are discarded
-                child.bypass = bypass
+        if (depth > 0) {
+            for (url in urls.asIterable()) {
+                val child = Acl().fromReader(
+                    connect(url).also {
+                        (it as? HttpURLConnection)?.instanceFollowRedirects = true
+                    }.getInputStream().bufferedReader(),
+                    bypass,
+                )
+                child.flatten(depth - 1, connect)
+                if (bypass != child.bypass) {
+                    Timber.w(
+                        "Imported network ACL has a conflicting mode set. " +
+                            "This will probably not work as intended. URL: $url",
+                    )
+                    child.subnets.clear() // subnets for the different mode are discarded
+                    child.bypass = bypass
+                }
+                for (item in child.bypassHostnames.asIterable()) bypassHostnames.add(item)
+                for (item in child.proxyHostnames.asIterable()) proxyHostnames.add(item)
+                for (item in child.subnets.asIterable()) subnets.add(item)
             }
-            for (item in child.bypassHostnames.asIterable()) bypassHostnames.add(item)
-            for (item in child.proxyHostnames.asIterable()) proxyHostnames.add(item)
-            for (item in child.subnets.asIterable()) subnets.add(item)
         }
         urls.clear()
         return this
@@ -174,16 +192,20 @@ class Acl {
     override fun toString(): String {
         val result = StringBuilder()
         result.append(if (bypass) "[bypass_all]\n" else "[proxy_all]\n")
-        val bypassList = (if (bypass) {
-            bypassHostnames.asIterable().asSequence()
-        } else {
-            subnets.asIterable().asSequence().map(Subnet::toString) + bypassHostnames.asIterable().asSequence()
-        }).toList()
-        val proxyList = (if (bypass) {
-            subnets.asIterable().asSequence().map(Subnet::toString) + proxyHostnames.asIterable().asSequence()
-        } else {
-            proxyHostnames.asIterable().asSequence()
-        }).toList()
+        val bypassList = (
+            if (bypass) {
+                bypassHostnames.asIterable().asSequence()
+            } else {
+                subnets.asIterable().asSequence().map(Subnet::toString) + bypassHostnames.asIterable().asSequence()
+            }
+            ).toList()
+        val proxyList = (
+            if (bypass) {
+                subnets.asIterable().asSequence().map(Subnet::toString) + proxyHostnames.asIterable().asSequence()
+            } else {
+                proxyHostnames.asIterable().asSequence()
+            }
+            ).toList()
         if (bypassList.isNotEmpty()) {
             result.append("[bypass_list]\n")
             result.append(bypassList.joinToString("\n"))

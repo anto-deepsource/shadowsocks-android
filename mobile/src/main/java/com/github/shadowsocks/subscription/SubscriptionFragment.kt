@@ -62,14 +62,17 @@ class SubscriptionFragment : ToolbarFragment(), Toolbar.OnMenuItemClickListener 
     @Parcelize
     data class SubEditResult(val edited: String?, val replacing: String?) : Parcelable
 
-    class SubDialogFragment : AlertDialogFragment<SubItem, SubEditResult>(),
-            TextWatcher, AdapterView.OnItemSelectedListener {
+    class SubDialogFragment :
+        AlertDialogFragment<SubItem, SubEditResult>(),
+        TextWatcher,
+        AdapterView.OnItemSelectedListener {
         private lateinit var editText: EditText
         private lateinit var inputLayout: TextInputLayout
         private val positive by lazy { (dialog as AlertDialog).getButton(AlertDialog.BUTTON_POSITIVE) }
 
         override fun AlertDialog.Builder.prepare(listener: DialogInterface.OnClickListener) {
             val activity = requireActivity()
+
             @SuppressLint("InflateParams")
             val view = activity.layoutInflater.inflate(R.layout.dialog_subscription, null)
             editText = view.findViewById(R.id.content)
@@ -149,8 +152,10 @@ class SubscriptionFragment : ToolbarFragment(), Toolbar.OnMenuItemClickListener 
             holder.bind(subscription.urls[i])
         }
 
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) = SubViewHolder(LayoutInflater
-                .from(parent.context).inflate(android.R.layout.simple_list_item_1, parent, false))
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) = SubViewHolder(
+            LayoutInflater
+                .from(parent.context).inflate(android.R.layout.simple_list_item_1, parent, false),
+        )
 
         override fun getItemCount(): Int = subscription.urls.size()
 
@@ -202,7 +207,7 @@ class SubscriptionFragment : ToolbarFragment(), Toolbar.OnMenuItemClickListener 
     private lateinit var undoManager: UndoSnackbarManager<URL>
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
-            inflater.inflate(R.layout.layout_subscriptions, container, false)
+        inflater.inflate(R.layout.layout_subscriptions, container, false)
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -232,10 +237,13 @@ class SubscriptionFragment : ToolbarFragment(), Toolbar.OnMenuItemClickListener 
         undoManager = UndoSnackbarManager(activity, adapter::undo)
         ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.START) {
             override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) =
-                    adapter.remove(viewHolder.bindingAdapterPosition)
+                adapter.remove(viewHolder.bindingAdapterPosition)
 
-            override fun onMove(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder,
-                                target: RecyclerView.ViewHolder): Boolean = false
+            override fun onMove(
+                recyclerView: RecyclerView,
+                viewHolder: RecyclerView.ViewHolder,
+                target: RecyclerView.ViewHolder,
+            ): Boolean = false
         }).attachToRecyclerView(list)
     }
 
