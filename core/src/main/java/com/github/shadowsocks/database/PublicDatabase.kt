@@ -35,7 +35,7 @@ abstract class PublicDatabase : RoomDatabase() {
         private val instance by lazy {
             Room.databaseBuilder(Core.deviceStorage, PublicDatabase::class.java, Key.DB_PUBLIC).apply {
                 addMigrations(
-                        Migration3
+                    Migration3,
                 )
                 allowMainThreadQueries()
                 enableMultiInstanceInvalidation()
@@ -48,7 +48,11 @@ abstract class PublicDatabase : RoomDatabase() {
     }
     abstract fun keyValuePairDao(): KeyValuePair.Dao
 
-    internal object Migration3 : RecreateSchemaMigration(2, 3, "KeyValuePair",
-            "(`key` TEXT NOT NULL, `valueType` INTEGER NOT NULL, `value` BLOB NOT NULL, PRIMARY KEY(`key`))",
-            "`key`, `valueType`, `value`")
+    internal object Migration3 : RecreateSchemaMigration(
+        2,
+        3,
+        "KeyValuePair",
+        "(`key` TEXT NOT NULL, `valueType` INTEGER NOT NULL, `value` BLOB NOT NULL, PRIMARY KEY(`key`))",
+        "`key`, `valueType`, `value`",
+    )
 }

@@ -28,9 +28,12 @@ import androidx.appcompat.widget.AppCompatTextView
 import androidx.core.view.isGone
 import timber.log.Timber
 
-class AutoCollapseTextView @JvmOverloads constructor(context: Context, attrs: AttributeSet? = null,
-                                                     defStyleAttr: Int = 0) :
-        AppCompatTextView(context, attrs, defStyleAttr) {
+class AutoCollapseTextView @JvmOverloads constructor(
+    context: Context,
+    attrs: AttributeSet? = null,
+    defStyleAttr: Int = 0,
+) :
+    AppCompatTextView(context, attrs, defStyleAttr) {
     override fun onTextChanged(text: CharSequence?, start: Int, lengthBefore: Int, lengthAfter: Int) {
         super.onTextChanged(text, start, lengthBefore, lengthAfter)
         isGone = text.isNullOrEmpty()
