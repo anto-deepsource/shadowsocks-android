@@ -33,9 +33,9 @@ import androidx.recyclerview.widget.RecyclerView
 open class LeanbackSingleListPreferenceDialogFragment : LeanbackListPreferenceDialogFragmentCompat() {
     companion object {
         private val mEntryValues = LeanbackListPreferenceDialogFragmentCompat::class.java
-                .getDeclaredField("mEntryValues").apply { isAccessible = true }
+            .getDeclaredField("mEntryValues").apply { isAccessible = true }
         private val mInitialSelection = LeanbackListPreferenceDialogFragmentCompat::class.java
-                .getDeclaredField("mInitialSelection").apply { isAccessible = true }
+            .getDeclaredField("mInitialSelection").apply { isAccessible = true }
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {

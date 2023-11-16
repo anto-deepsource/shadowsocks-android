@@ -40,14 +40,16 @@ cargo {
     targets = listOf("arm", "arm64", "x86", "x86_64")
     profile = findProperty("CARGO_PROFILE")?.toString() ?: currentFlavor
     extraCargoBuildArguments = listOf("--bin", libname!!)
-    featureSpec.noDefaultBut(arrayOf(
-        "stream-cipher",
-        "aead-cipher-extra",
-        "logging",
-        "local-flow-stat",
-        "local-dns",
-        "aead-cipher-2022",
-    ))
+    featureSpec.noDefaultBut(
+        arrayOf(
+            "stream-cipher",
+            "aead-cipher-extra",
+            "logging",
+            "local-flow-stat",
+            "local-dns",
+            "aead-cipher-2022",
+        ),
+    )
     exec = { spec, toolchain ->
         run {
             try {
@@ -77,7 +79,7 @@ tasks.whenTaskAdded {
 }
 
 tasks.register<Exec>("cargoClean") {
-    executable("cargo")     // cargo.cargoCommand
+    executable("cargo") // cargo.cargoCommand
     args("clean")
     workingDir("$projectDir/${cargo.module}")
 }

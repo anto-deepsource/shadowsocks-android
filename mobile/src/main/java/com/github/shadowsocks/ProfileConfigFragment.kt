@@ -53,8 +53,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.parcelize.Parcelize
 
-class ProfileConfigFragment : PreferenceFragmentCompat(),
-        Preference.OnPreferenceChangeListener, OnPreferenceDataStoreChangeListener {
+class ProfileConfigFragment :
+    PreferenceFragmentCompat(),
+    Preference.OnPreferenceChangeListener,
+    OnPreferenceDataStoreChangeListener {
     companion object PasswordSummaryProvider : Preference.SummaryProvider<EditTextPreference> {
         override fun provideSummary(preference: EditTextPreference) = "\u2022".repeat(preference.text?.length ?: 0)
     }
@@ -135,7 +137,8 @@ class ProfileConfigFragment : PreferenceFragmentCompat(),
         ViewCompat.setOnApplyWindowInsetsListener(listView, ListListener)
         setFragmentResultListener(PluginPreferenceDialogFragment::class.java.name) { _, bundle ->
             val selected = plugin.plugins.lookup.getValue(
-                bundle.getString(PluginPreferenceDialogFragment.KEY_SELECTED_ID)!!)
+                bundle.getString(PluginPreferenceDialogFragment.KEY_SELECTED_ID)!!,
+            )
             val override = pluginConfiguration.pluginsOptions.keys.firstOrNull {
                 plugin.plugins.lookup[it] == selected
             }
@@ -185,7 +188,7 @@ class ProfileConfigFragment : PreferenceFragmentCompat(),
     override fun onAttach(context: Context) {
         super.onAttach(context)
         receiver = context.listenForPackageChanges(false) {
-            lifecycleScope.launch(Dispatchers.Main) {   // wait until changes were flushed
+            lifecycleScope.launch(Dispatchers.Main) { // wait until changes were flushed
                 whenCreated { initPlugins() }
             }
         }
@@ -195,14 +198,20 @@ class ProfileConfigFragment : PreferenceFragmentCompat(),
         super.onResume()
         isProxyApps.isChecked = DataStore.proxyApps // fetch proxyApps updated by AppManager
         val fallbackProfile = DataStore.udpFallback?.let { ProfileManager.getProfile(it) }
-        if (fallbackProfile == null) udpFallback.setSummary(R.string.plugin_disabled)
-        else udpFallback.summary = fallbackProfile.formattedName
+        if (fallbackProfile == null) {
+            udpFallback.setSummary(R.string.plugin_disabled)
+        } else {
+            udpFallback.summary = fallbackProfile.formattedName
+        }
     }
 
     override fun onPreferenceChange(preference: Preference, newValue: Any?): Boolean = try {
         val selected = pluginConfiguration.selected
-        pluginConfiguration = PluginConfiguration(pluginConfiguration.pluginsOptions +
-                (pluginConfiguration.selected to PluginOptions(selected, newValue as? String?)), selected)
+        pluginConfiguration = PluginConfiguration(
+            pluginConfiguration.pluginsOptions +
+                (pluginConfiguration.selected to PluginOptions(selected, newValue as? String?)),
+            selected,
+        )
         DataStore.plugin = pluginConfiguration.toString()
         makeDirt()
         true
@@ -223,9 +232,13 @@ class ProfileConfigFragment : PreferenceFragmentCompat(),
             }.showAllowingStateLoss(parentFragmentManager, Key.plugin)
             Key.pluginConfigure -> {
                 val intent = PluginManager.buildIntent(plugin.selectedEntry!!.id, PluginContract.ACTION_CONFIGURE)
-                if (intent.resolveActivity(requireContext().packageManager) == null) showPluginEditor() else {
-                    configurePlugin.launch(intent
-                            .putExtra(PluginContract.EXTRA_OPTIONS, pluginConfiguration.getOptions().toString()))
+                if (intent.resolveActivity(requireContext().packageManager) == null) {
+                    showPluginEditor()
+                } else {
+                    configurePlugin.launch(
+                        intent
+                            .putExtra(PluginContract.EXTRA_OPTIONS, pluginConfiguration.getOptions().toString()),
+                    )
                 }
             }
             else -> super.onDisplayPreferenceDialog(preference)
@@ -233,7 +246,7 @@ class ProfileConfigFragment : PreferenceFragmentCompat(),
     }
 
     private val configurePlugin = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-        (resultCode, data) ->
+            (resultCode, data) ->
         when (resultCode) {
             Activity.RESULT_OK -> {
                 val options = data?.getStringExtra(PluginContract.EXTRA_OPTIONS)
