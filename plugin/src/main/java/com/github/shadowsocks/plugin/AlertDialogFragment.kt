@@ -35,7 +35,7 @@ import androidx.fragment.app.Fragment
 @Suppress("DEPRECATION")
 @Deprecated("Related APIs are deprecated in AndroidX", ReplaceWith("fragment.AlertDialogFragment"))
 abstract class AlertDialogFragment<Arg : Parcelable, Ret : Parcelable> :
-        AppCompatDialogFragment(), DialogInterface.OnClickListener {
+    AppCompatDialogFragment(), DialogInterface.OnClickListener {
     companion object {
         private const val KEY_ARG = "arg"
         private const val KEY_RET = "ret"
@@ -48,12 +48,16 @@ abstract class AlertDialogFragment<Arg : Parcelable, Ret : Parcelable> :
     fun withArg(arg: Arg) = apply { arguments = Bundle().apply { putParcelable(KEY_ARG, arg) } }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): AlertDialog =
-            AlertDialog.Builder(requireContext()).also { it.prepare(this) }.create()
+        AlertDialog.Builder(requireContext()).also { it.prepare(this) }.create()
 
     override fun onClick(dialog: DialogInterface?, which: Int) {
-        targetFragment?.onActivityResult(targetRequestCode, which, ret(which)?.let {
-            Intent().replaceExtras(Bundle().apply { putParcelable(KEY_RET, it) })
-        })
+        targetFragment?.onActivityResult(
+            targetRequestCode,
+            which,
+            ret(which)?.let {
+                Intent().replaceExtras(Bundle().apply { putParcelable(KEY_RET, it) })
+            },
+        )
     }
 
     override fun onDismiss(dialog: DialogInterface) {

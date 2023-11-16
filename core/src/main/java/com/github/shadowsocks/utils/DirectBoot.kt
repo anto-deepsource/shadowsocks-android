@@ -35,8 +35,11 @@ object DirectBoot : BroadcastReceiver() {
      * app.currentProfile will call this.
      */
     fun update(profile: Profile? = ProfileManager.getProfile(DataStore.profileId)) =
-            if (profile == null) clean()
-            else ObjectOutputStream(file.outputStream()).use { it.writeObject(ProfileManager.expand(profile)) }
+        if (profile == null) {
+            clean()
+        } else {
+            ObjectOutputStream(file.outputStream()).use { it.writeObject(ProfileManager.expand(profile)) }
+        }
 
     fun flushTrafficStats() {
         getDeviceProfile()?.also { (profile, fallback) ->
