@@ -60,11 +60,15 @@ open class RoomPreferenceDataStore(private val kvPairDao: KeyValuePair.Dao) : Pr
         kvPairDao.put(KeyValuePair(key).put(value))
         fireChangeListener(key)
     }
-    override fun putString(key: String, value: String?) = if (value == null) remove(key) else {
+    override fun putString(key: String, value: String?) = if (value == null) {
+        remove(key)
+    } else {
         kvPairDao.put(KeyValuePair(key).put(value))
         fireChangeListener(key)
     }
-    override fun putStringSet(key: String, values: MutableSet<String>?) = if (values == null) remove(key) else {
+    override fun putStringSet(key: String, values: MutableSet<String>?) = if (values == null) {
+        remove(key)
+    } else {
         kvPairDao.put(KeyValuePair(key).put(values))
         fireChangeListener(key)
     }

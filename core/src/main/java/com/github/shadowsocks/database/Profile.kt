@@ -48,41 +48,42 @@ import java.util.*
 @Entity
 @Parcelize
 data class Profile(
-        @PrimaryKey(autoGenerate = true)
-        var id: Long = 0,
+    @PrimaryKey(autoGenerate = true)
+    var id: Long = 0,
 
-        // user configurable fields
-        var name: String? = "",
+    // user configurable fields
+    var name: String? = "",
 
-        var host: String = "example.shadowsocks.org",
-        var remotePort: Int = 8388,
-        var password: String = "u1rRWTssNv0p",
-        var method: String = "aes-256-cfb",
+    var host: String = "example.shadowsocks.org",
+    var remotePort: Int = 8388,
+    var password: String = "u1rRWTssNv0p",
+    var method: String = "aes-256-cfb",
 
-        var route: String = "all",
-        var remoteDns: String = "dns.google",
-        var proxyApps: Boolean = false,
-        var bypass: Boolean = false,
-        var udpdns: Boolean = false,
-        var ipv6: Boolean = false,
-        @TargetApi(28)
-        var metered: Boolean = false,
-        var individual: String = "",
-        var plugin: String? = null,
-        var udpFallback: Long? = null,
+    var route: String = "all",
+    var remoteDns: String = "dns.google",
+    var proxyApps: Boolean = false,
+    var bypass: Boolean = false,
+    var udpdns: Boolean = false,
+    var ipv6: Boolean = false,
+    @TargetApi(28)
+    var metered: Boolean = false,
+    var individual: String = "",
+    var plugin: String? = null,
+    var udpFallback: Long? = null,
 
-        // managed fields
-        var subscription: SubscriptionStatus = SubscriptionStatus.UserConfigured,
-        var tx: Long = 0,
-        var rx: Long = 0,
-        var userOrder: Long = 0,
+    // managed fields
+    var subscription: SubscriptionStatus = SubscriptionStatus.UserConfigured,
+    var tx: Long = 0,
+    var rx: Long = 0,
+    var userOrder: Long = 0,
 
-        @Ignore // not persisted in db, only used by direct boot
-        var dirty: Boolean = false
+    @Ignore // not persisted in db, only used by direct boot
+    var dirty: Boolean = false,
 ) : Parcelable, Serializable {
     enum class SubscriptionStatus(val persistedValue: Int) {
         UserConfigured(0),
         Active(1),
+
         /**
          * This profile is no longer present in subscriptions.
          */
@@ -93,6 +94,7 @@ data class Profile(
             @JvmStatic
             @TypeConverter
             fun of(value: Int) = values().single { it.persistedValue == value }
+
             @JvmStatic
             @TypeConverter
             fun toInt(status: SubscriptionStatus) = status.persistedValue
@@ -102,7 +104,7 @@ data class Profile(
     companion object {
         private const val serialVersionUID = 1L
         private val pattern =
-                """(?i)ss://[-a-zA-Z0-9+&@#/%?=.~*'()|!:,;_\[\]]*[-a-zA-Z0-9+&@#/%=.~*'()|\[\]]""".toRegex()
+            """(?i)ss://[-a-zA-Z0-9+&@#/%?=.~*'()|!:,;_\[\]]*[-a-zA-Z0-9+&@#/%=.~*'()|\[\]]""".toRegex()
         private val userInfoPattern = "^(.+?):(.*)$".toRegex()
         private val legacyPattern = "^(.+?):(.*)@(.+?):(\\d+?)$".toRegex()
 
@@ -126,8 +128,14 @@ data class Profile(
                         null
                     }
                 } else {
-                    val match = userInfoPattern.matchEntire(String(Base64.decode(uri.userInfo,
-                            Base64.NO_PADDING or Base64.NO_WRAP or Base64.URL_SAFE)))
+                    val match = userInfoPattern.matchEntire(
+                        String(
+                            Base64.decode(
+                                uri.userInfo,
+                                Base64.NO_PADDING or Base64.NO_WRAP or Base64.URL_SAFE,
+                            ),
+                        ),
+                    )
                     if (match != null) {
                         val profile = Profile()
                         feature?.copyFeatureSettingsTo(profile)
@@ -203,7 +211,7 @@ data class Profile(
                         proxyApps = it["enabled"].optBoolean ?: proxyApps
                         bypass = it["bypass"].optBoolean ?: bypass
                         individual = (it["android_list"] as? JsonArray)?.asIterable()?.mapNotNull { it.optString }
-                                ?.joinToString("\n") ?: individual
+                            ?.joinToString("\n") ?: individual
                     }
                     udpdns = json["udpdns"].optBoolean ?: udpdns
                     (json["udp_fallback"] as? JsonObject)?.let { tryParse(it, true) }?.also { fallbackMap[this] = it }
@@ -226,8 +234,8 @@ data class Profile(
                 for ((profile, fallback) in fallbackMap) {
                     val match = profiles.firstOrNull {
                         fallback.host == it.host && fallback.remotePort == it.remotePort &&
-                                fallback.password == it.password && fallback.method == it.method &&
-                                it.plugin.isNullOrEmpty()
+                            fallback.password == it.password && fallback.method == it.method &&
+                            it.plugin.isNullOrEmpty()
                     }
                     profile.udpFallback = (match ?: create(fallback)).id
                     ProfileManager.updateProfile(profile)
@@ -292,12 +300,14 @@ data class Profile(
     }
 
     fun toUri(): Uri {
-        val auth = Base64.encodeToString("$method:$password".toByteArray(),
-                Base64.NO_PADDING or Base64.NO_WRAP or Base64.URL_SAFE)
+        val auth = Base64.encodeToString(
+            "$method:$password".toByteArray(),
+            Base64.NO_PADDING or Base64.NO_WRAP or Base64.URL_SAFE,
+        )
         val wrappedHost = if (host.contains(':')) "[$host]" else host
         val builder = Uri.Builder()
-                .scheme("ss")
-                .encodedAuthority("$auth@$wrappedHost:$remotePort")
+            .scheme("ss")
+            .encodedAuthority("$auth@$wrappedHost:$remotePort")
         val configuration = PluginConfiguration(plugin ?: "")
         if (configuration.selected.isNotEmpty()) {
             builder.appendQueryParameter(Key.plugin, configuration.getOptions().toString(false))
@@ -325,14 +335,17 @@ data class Profile(
         put("remote_dns", remoteDns)
         put("ipv6", ipv6)
         put("metered", metered)
-        put("proxy_apps", JSONObject().apply {
-            put("enabled", proxyApps)
-            if (proxyApps) {
-                put("bypass", bypass)
-                // android_ prefix is used because package names are Android specific
-                put("android_list", JSONArray(individual.split("\n")))
-            }
-        })
+        put(
+            "proxy_apps",
+            JSONObject().apply {
+                put("enabled", proxyApps)
+                if (proxyApps) {
+                    put("bypass", bypass)
+                    // android_ prefix is used because package names are Android specific
+                    put("android_list", JSONArray(individual.split("\n")))
+                }
+            },
+        )
         put("udpdns", udpdns)
         val fallback = profiles.get(udpFallback ?: return@apply)
         if (fallback != null && fallback.plugin.isNullOrEmpty()) fallback.toJson().also { put("udp_fallback", it) }

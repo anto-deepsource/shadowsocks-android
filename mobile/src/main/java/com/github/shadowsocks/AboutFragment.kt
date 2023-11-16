@@ -40,7 +40,7 @@ import com.google.android.gms.oss.licenses.OssLicensesMenuActivity
 
 class AboutFragment : ToolbarFragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
-            inflater.inflate(R.layout.layout_about, container, false)
+        inflater.inflate(R.layout.layout_about, container, false)
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -48,23 +48,33 @@ class AboutFragment : ToolbarFragment() {
         toolbar.title = getString(R.string.about_title, BuildConfig.VERSION_NAME)
         view.findViewById<TextView>(R.id.tv_about).apply {
             ViewCompat.setOnApplyWindowInsetsListener(this, MainListListener)
-            text = SpannableStringBuilder(resources.openRawResource(R.raw.about).bufferedReader().readText()
-                    .parseAsHtml(HtmlCompat.FROM_HTML_SEPARATOR_LINE_BREAK_LIST_ITEM)).apply {
+            text = SpannableStringBuilder(
+                resources.openRawResource(R.raw.about).bufferedReader().readText()
+                    .parseAsHtml(HtmlCompat.FROM_HTML_SEPARATOR_LINE_BREAK_LIST_ITEM),
+            ).apply {
                 for (span in getSpans(0, length, URLSpan::class.java)) {
-                    setSpan(object : ClickableSpan() {
-                        override fun onClick(view: View) = when {
-                            span.url.startsWith("#") -> {
-                                startActivity(Intent(context, OssLicensesMenuActivity::class.java))
+                    setSpan(
+                        object : ClickableSpan() {
+                            override fun onClick(view: View) = when {
+                                span.url.startsWith("#") -> {
+                                    startActivity(Intent(context, OssLicensesMenuActivity::class.java))
+                                }
+                                span.url.startsWith("mailto:") -> {
+                                    startActivity(
+                                        Intent.createChooser(
+                                            Intent().apply {
+                                                action = Intent.ACTION_SENDTO
+                                                data = span.url.toUri()
+                                            },
+                                            getString(R.string.send_email),
+                                        ),
+                                    )
+                                }
+                                else -> (activity as MainActivity).launchUrl(span.url)
                             }
-                            span.url.startsWith("mailto:") -> {
-                                startActivity(Intent.createChooser(Intent().apply {
-                                    action = Intent.ACTION_SENDTO
-                                    data = span.url.toUri()
-                                }, getString(R.string.send_email)))
-                            }
-                            else -> (activity as MainActivity).launchUrl(span.url)
-                        }
-                    }, getSpanStart(span), getSpanEnd(span), getSpanFlags(span))
+                        },
+                        getSpanStart(span), getSpanEnd(span), getSpanFlags(span),
+                    )
                     removeSpan(span)
                 }
             }

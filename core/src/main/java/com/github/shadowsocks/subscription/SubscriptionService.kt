@@ -54,8 +54,13 @@ class SubscriptionService : Service(), CoroutineScope {
 
         val idle = MutableLiveData(true)
 
-        val notificationChannel @RequiresApi(26) get() = NotificationChannel(NOTIFICATION_CHANNEL,
-                app.getText(R.string.service_subscription), NotificationManager.IMPORTANCE_LOW)
+        val notificationChannel
+            @RequiresApi(26)
+            get() = NotificationChannel(
+                NOTIFICATION_CHANNEL,
+                app.getText(R.string.service_subscription),
+                NotificationManager.IMPORTANCE_LOW,
+            )
     }
 
     override val coroutineContext = SupervisorJob() + CoroutineExceptionHandler { _, t -> Timber.w(t) }
@@ -70,8 +75,12 @@ class SubscriptionService : Service(), CoroutineScope {
         if (worker == null) {
             idle.value = false
             if (!receiverRegistered) {
-                ContextCompat.registerReceiver(this, cancelReceiver, IntentFilter(Action.ABORT),
-                    ContextCompat.RECEIVER_NOT_EXPORTED)
+                ContextCompat.registerReceiver(
+                    this,
+                    cancelReceiver,
+                    IntentFilter(Action.ABORT),
+                    ContextCompat.RECEIVER_NOT_EXPORTED,
+                )
                 receiverRegistered = true
             }
             worker = launch {
@@ -79,13 +88,18 @@ class SubscriptionService : Service(), CoroutineScope {
                 val notification = NotificationCompat.Builder(this@SubscriptionService, NOTIFICATION_CHANNEL).apply {
                     color = ContextCompat.getColor(this@SubscriptionService, R.color.material_primary_500)
                     priority = NotificationCompat.PRIORITY_LOW
-                    addAction(NotificationCompat.Action.Builder(
+                    addAction(
+                        NotificationCompat.Action.Builder(
                             R.drawable.ic_navigation_close,
                             getText(R.string.stop),
-                            PendingIntent.getBroadcast(this@SubscriptionService, 0,
-                                    Intent(Action.ABORT).setPackage(packageName), PendingIntent.FLAG_IMMUTABLE)).apply {
-                        setShowsUserInterface(false)
-                    }.build())
+                            PendingIntent.getBroadcast(
+                                this@SubscriptionService, 0,
+                                Intent(Action.ABORT).setPackage(packageName), PendingIntent.FLAG_IMMUTABLE,
+                            ),
+                        ).apply {
+                            setShowsUserInterface(false)
+                        }.build(),
+                    )
                     setCategory(NotificationCompat.CATEGORY_PROGRESS)
                     setContentTitle(getString(R.string.service_subscription_working, 0, urls.size()))
                     setOngoing(true)
@@ -99,10 +113,13 @@ class SubscriptionService : Service(), CoroutineScope {
                 try {
                     val localJsons = workers.awaitAll()
                     withContext(Dispatchers.Main) {
-                        Core.notification.notify(NOTIFICATION_ID, notification.apply {
-                            setContentTitle(getText(R.string.service_subscription_finishing))
-                            setProgress(0, 0, true)
-                        }.build())
+                        Core.notification.notify(
+                            NOTIFICATION_ID,
+                            notification.apply {
+                                setContentTitle(getText(R.string.service_subscription_finishing))
+                                setProgress(0, 0, true)
+                            }.build(),
+                        )
                         createProfilesFromSubscription(localJsons.asSequence().filterNotNull().map { it.inputStream() })
                     }
                 } finally {
@@ -121,7 +138,9 @@ class SubscriptionService : Service(), CoroutineScope {
                     stopSelf(startId)
                 }
             }
-        } else stopSelf(startId)
+        } else {
+            stopSelf(startId)
+        }
         return START_NOT_STICKY
     }
 
@@ -142,10 +161,13 @@ class SubscriptionService : Service(), CoroutineScope {
         } finally {
             withContext(Dispatchers.Main) {
                 counter += 1
-                Core.notification.notify(NOTIFICATION_ID, notification.apply {
-                    setContentTitle(getString(R.string.service_subscription_working, counter, max))
-                    setProgress(max, counter, false)
-                }.build())
+                Core.notification.notify(
+                    NOTIFICATION_ID,
+                    notification.apply {
+                        setContentTitle(getString(R.string.service_subscription_working, counter, max))
+                        setProgress(max, counter, false)
+                    }.build(),
+                )
             }
         }
     }
@@ -156,7 +178,7 @@ class SubscriptionService : Service(), CoroutineScope {
         val subscriptions = mutableMapOf<Pair<String?, String>, Profile>()
         val toUpdate = mutableSetOf<Long>()
         var feature: Profile? = null
-        profiles?.forEach { profile ->  // preprocessing phase
+        profiles?.forEach { profile -> // preprocessing phase
             if (currentId == profile.id) feature = profile
             if (profile.subscription == Profile.SubscriptionStatus.UserConfigured) return@forEach
             if (subscriptions.putIfAbsent(profile.name to profile.formattedAddress, profile) != null) {
@@ -173,8 +195,10 @@ class SubscriptionService : Service(), CoroutineScope {
                 subscriptions.compute(it.name to it.formattedAddress) { _, oldProfile ->
                     when (oldProfile?.subscription) {
                         Profile.SubscriptionStatus.Active -> {
-                            Timber.w("Duplicate profiles detected. Please use different profile names and/or " +
-                                    "address:port for better subscription support.")
+                            Timber.w(
+                                "Duplicate profiles detected. Please use different profile names and/or " +
+                                    "address:port for better subscription support.",
+                            )
                             oldProfile
                         }
                         Profile.SubscriptionStatus.Obsolete -> {
@@ -186,9 +210,11 @@ class SubscriptionService : Service(), CoroutineScope {
                             oldProfile.subscription = Profile.SubscriptionStatus.Active
                             oldProfile
                         }
-                        else -> ProfileManager.createProfile(it.apply {
-                            subscription = Profile.SubscriptionStatus.Active
-                        })
+                        else -> ProfileManager.createProfile(
+                            it.apply {
+                                subscription = Profile.SubscriptionStatus.Active
+                            },
+                        )
                     }
                 }!!
             }
