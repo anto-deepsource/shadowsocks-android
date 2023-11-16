@@ -47,10 +47,14 @@ class GlobalSettingsPreferenceFragment : PreferenceFragmentCompat() {
         }
 
         val canToggleLocked = findPreference<Preference>(Key.directBootAware)!!
-        if (Build.VERSION.SDK_INT >= 24) canToggleLocked.setOnPreferenceChangeListener { _, newValue ->
-            if (Core.directBootSupported && newValue as Boolean) DirectBoot.update() else DirectBoot.clean()
-            true
-        } else canToggleLocked.remove()
+        if (Build.VERSION.SDK_INT >= 24) {
+            canToggleLocked.setOnPreferenceChangeListener { _, newValue ->
+                if (Core.directBootSupported && newValue as Boolean) DirectBoot.update() else DirectBoot.clean()
+                true
+            }
+        } else {
+            canToggleLocked.remove()
+        }
 
         val serviceMode = findPreference<Preference>(Key.serviceMode)!!
         val portProxy = findPreference<EditTextPreference>(Key.portProxy)!!
@@ -68,7 +72,9 @@ class GlobalSettingsPreferenceFragment : PreferenceFragmentCompat() {
             serviceMode.isEnabled = stopped
             portProxy.isEnabled = stopped
             portLocalDns.isEnabled = stopped
-            if (stopped) onServiceModeChange.onPreferenceChange(serviceMode, DataStore.serviceMode) else {
+            if (stopped) {
+                onServiceModeChange.onPreferenceChange(serviceMode, DataStore.serviceMode)
+            } else {
                 portTransproxy.isEnabled = false
             }
         }

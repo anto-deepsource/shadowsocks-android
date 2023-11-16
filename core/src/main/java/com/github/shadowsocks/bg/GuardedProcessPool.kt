@@ -48,7 +48,7 @@ class GuardedProcessPool(private val onFatal: suspend (IOException) -> Unit) : C
 
         private fun streamLogger(input: InputStream, logger: (String) -> Unit) = try {
             input.bufferedReader().forEachLine(logger)
-        } catch (_: IOException) { }    // ignore
+        } catch (_: IOException) { } // ignore
 
         fun start() {
             process = ProcessBuilder(cmd).directory(Core.deviceStorage.noBackupFilesDir).start()
@@ -73,7 +73,8 @@ class GuardedProcessPool(private val onFatal: suspend (IOException) -> Unit) : C
                     running = false
                     when {
                         SystemClock.elapsedRealtime() - startTime < 1000 -> throw IOException(
-                                "$cmdName exits too fast (exit code: $exitCode)")
+                            "$cmdName exits too fast (exit code: $exitCode)",
+                        )
                         exitCode == 128 + OsConstants.SIGKILL -> Timber.w("$cmdName was killed")
                         else -> Timber.w(IOException("$cmdName unexpectedly exits with code $exitCode"))
                     }
@@ -86,24 +87,26 @@ class GuardedProcessPool(private val onFatal: suspend (IOException) -> Unit) : C
                 Timber.w("error occurred. stop guard: ${Commandline.toString(cmd)}")
                 GlobalScope.launch(Dispatchers.Main) { onFatal(e) }
             } finally {
-                if (running) withContext(NonCancellable) {  // clean-up cannot be cancelled
-                    if (Build.VERSION.SDK_INT < 24) {
-                        try {
-                            Os.kill(pid.get(process) as Int, OsConstants.SIGTERM)
-                        } catch (e: ErrnoException) {
-                            if (e.errno != OsConstants.ESRCH) Timber.w(e)
-                        } catch (e: ReflectiveOperationException) {
-                            Timber.w(e)
+                if (running) {
+                    withContext(NonCancellable) { // clean-up cannot be cancelled
+                        if (Build.VERSION.SDK_INT < 24) {
+                            try {
+                                Os.kill(pid.get(process) as Int, OsConstants.SIGTERM)
+                            } catch (e: ErrnoException) {
+                                if (e.errno != OsConstants.ESRCH) Timber.w(e)
+                            } catch (e: ReflectiveOperationException) {
+                                Timber.w(e)
+                            }
+                            if (withTimeoutOrNull(500) { exitChannel.receive() } != null) return@withContext
                         }
-                        if (withTimeoutOrNull(500) { exitChannel.receive() } != null) return@withContext
-                    }
-                    process.destroy()                       // kill the process
-                    if (Build.VERSION.SDK_INT >= 26) {
-                        if (withTimeoutOrNull(1000) { exitChannel.receive() } != null) return@withContext
-                        process.destroyForcibly()           // Force to kill the process if it's still alive
-                    }
-                    exitChannel.receive()
-                }                                           // otherwise process already exited, nothing to be done
+                        process.destroy() // kill the process
+                        if (Build.VERSION.SDK_INT >= 26) {
+                            if (withTimeoutOrNull(1000) { exitChannel.receive() } != null) return@withContext
+                            process.destroyForcibly() // Force to kill the process if it's still alive
+                        }
+                        exitChannel.receive()
+                    } // otherwise process already exited, nothing to be done
+                }
             }
         }
     }
