@@ -46,8 +46,10 @@ import com.github.shadowsocks.utils.*
 import com.google.android.gms.oss.licenses.OssLicensesMenuActivity
 import timber.log.Timber
 
-class MainPreferenceFragment : LeanbackPreferenceFragmentCompat(), ShadowsocksConnection.Callback,
-        OnPreferenceDataStoreChangeListener {
+class MainPreferenceFragment :
+    LeanbackPreferenceFragmentCompat(),
+    ShadowsocksConnection.Callback,
+    OnPreferenceDataStoreChangeListener {
     private lateinit var fab: ListPreference
     private lateinit var stats: Preference
     private lateinit var controlImport: Preference
@@ -67,27 +69,35 @@ class MainPreferenceFragment : LeanbackPreferenceFragmentCompat(), ShadowsocksCo
         private set
     override fun stateChanged(state: BaseService.State, profileName: String?, msg: String?) = changeState(state, msg)
     override fun trafficUpdated(profileId: Long, stats: TrafficStats) {
-        if (profileId == 0L) context?.let { context ->
-            this.stats.summary = getString(R.string.stat_summary,
+        if (profileId == 0L) {
+            context?.let { context ->
+                this.stats.summary = getString(
+                    R.string.stat_summary,
                     getString(R.string.speed, Formatter.formatFileSize(context, stats.txRate)),
                     getString(R.string.speed, Formatter.formatFileSize(context, stats.rxRate)),
                     Formatter.formatFileSize(context, stats.txTotal),
-                    Formatter.formatFileSize(context, stats.rxTotal))
+                    Formatter.formatFileSize(context, stats.rxTotal),
+                )
+            }
         }
     }
 
     private fun changeState(state: BaseService.State, msg: String? = null) {
         val context = context ?: return
         fab.isEnabled = state.canStop || state == BaseService.State.Stopped
-        fab.setTitle(when (state) {
-            BaseService.State.Connecting -> R.string.connecting
-            BaseService.State.Connected -> R.string.stop
-            BaseService.State.Stopping -> R.string.stopping
-            else -> R.string.connect
-        })
+        fab.setTitle(
+            when (state) {
+                BaseService.State.Connecting -> R.string.connecting
+                BaseService.State.Connected -> R.string.stop
+                BaseService.State.Stopping -> R.string.stopping
+                else -> R.string.connect
+            },
+        )
         stats.setTitle(R.string.connection_test_pending)
-        if ((state == BaseService.State.Connected).also { stats.isVisible = it }) tester.status.observe(this) {
-            it.retrieve(stats::setTitle) { msg -> Toast.makeText(context, msg, Toast.LENGTH_LONG).show() }
+        if ((state == BaseService.State.Connected).also { stats.isVisible = it }) {
+            tester.status.observe(this) {
+                it.retrieve(stats::setTitle) { msg -> Toast.makeText(context, msg, Toast.LENGTH_LONG).show() }
+            }
         } else {
             trafficUpdated(0, TrafficStats())
             tester.status.removeObservers(this)
@@ -101,17 +111,21 @@ class MainPreferenceFragment : LeanbackPreferenceFragmentCompat(), ShadowsocksCo
         shareOverLan.isEnabled = stopped
         portProxy.isEnabled = stopped
         portLocalDns.isEnabled = stopped
-        if (stopped) onServiceModeChange.onPreferenceChange(serviceMode, DataStore.serviceMode) else {
+        if (stopped) {
+            onServiceModeChange.onPreferenceChange(serviceMode, DataStore.serviceMode)
+        } else {
             portTransproxy.isEnabled = false
         }
     }
 
     private val connection = ShadowsocksConnection(true)
-    override fun onServiceConnected(service: IShadowsocksService) = changeState(try {
-        BaseService.State.values()[service.state]
-    } catch (_: RemoteException) {
-        BaseService.State.Idle
-    })
+    override fun onServiceConnected(service: IShadowsocksService) = changeState(
+        try {
+            BaseService.State.values()[service.state]
+        } catch (_: RemoteException) {
+            BaseService.State.Idle
+        },
+    )
     override fun onServiceDisconnected() = changeState(BaseService.State.Idle)
     override fun onBinderDied() {
         connection.disconnect(requireContext())
@@ -229,9 +243,12 @@ class MainPreferenceFragment : LeanbackPreferenceFragmentCompat(), ShadowsocksCo
         if (dataUris.isEmpty()) return@registerForActivityResult
         val context = requireContext()
         try {
-            ProfileManager.createProfilesFromJson(dataUris.asSequence().map {
-                context.contentResolver.openInputStream(it)
-            }.filterNotNull(), true)
+            ProfileManager.createProfilesFromJson(
+                dataUris.asSequence().map {
+                    context.contentResolver.openInputStream(it)
+                }.filterNotNull(),
+                true,
+            )
         } catch (e: Exception) {
             Timber.w(e)
             Toast.makeText(context, e.readableMessage, Toast.LENGTH_SHORT).show()
@@ -239,15 +256,17 @@ class MainPreferenceFragment : LeanbackPreferenceFragmentCompat(), ShadowsocksCo
         populateProfiles()
     }
     private val exportProfiles = registerForActivityResult(SaveJson) { data ->
-        if (data != null) ProfileManager.serializeToJson()?.let { profiles ->
-            val context = requireContext()
-            try {
-                context.contentResolver.openOutputStream(data)!!.bufferedWriter().use {
-                    it.write(profiles.toString(2))
+        if (data != null) {
+            ProfileManager.serializeToJson()?.let { profiles ->
+                val context = requireContext()
+                try {
+                    context.contentResolver.openOutputStream(data)!!.bufferedWriter().use {
+                        it.write(profiles.toString(2))
+                    }
+                } catch (e: Exception) {
+                    Timber.w(e)
+                    Toast.makeText(context, e.readableMessage, Toast.LENGTH_SHORT).show()
                 }
-            } catch (e: Exception) {
-                Timber.w(e)
-                Toast.makeText(context, e.readableMessage, Toast.LENGTH_SHORT).show()
             }
         }
     }

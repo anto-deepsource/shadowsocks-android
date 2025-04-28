@@ -107,7 +107,7 @@ object BaseService {
                 stopListeningForBandwidth(callback ?: return)
             }
         }
-        private val bandwidthListeners = mutableMapOf<IBinder, Long>()  // the binder is the real identifier
+        private val bandwidthListeners = mutableMapOf<IBinder, Long>() // the binder is the real identifier
         override val coroutineContext = Dispatchers.Main.immediate + Job()
         private var looper: Job? = null
 
@@ -139,9 +139,9 @@ object BaseService {
                 delay(bandwidthListeners.values.minOrNull() ?: return)
                 val proxies = listOfNotNull(data?.proxy, data?.udpFallback)
                 val stats = proxies
-                        .map { Pair(it.profile.id, it.trafficMonitor?.requestUpdate()) }
-                        .filter { it.second != null }
-                        .map { Triple(it.first, it.second!!.first, it.second!!.second) }
+                    .map { Pair(it.profile.id, it.trafficMonitor?.requestUpdate()) }
+                    .filter { it.second != null }
+                    .map { Triple(it.first, it.second!!.first, it.second!!.second) }
                 if (stats.any { it.third } && data?.state == State.Connected && bandwidthListeners.isNotEmpty()) {
                     val sum = stats.fold(TrafficStats()) { a, b -> a + b.second }
                     broadcast { item ->
@@ -165,17 +165,27 @@ object BaseService {
                 val data = data
                 val proxy = data?.proxy ?: return@launch
                 proxy.trafficMonitor?.out.also { stats ->
-                    cb.trafficUpdated(proxy.profile.id, if (stats == null) sum else {
-                        sum += stats
-                        stats
-                    })
+                    cb.trafficUpdated(
+                        proxy.profile.id,
+                        if (stats == null) {
+                            sum
+                        } else {
+                            sum += stats
+                            stats
+                        },
+                    )
                 }
                 data.udpFallback?.also { udpFallback ->
                     udpFallback.trafficMonitor?.out.also { stats ->
-                        cb.trafficUpdated(udpFallback.profile.id, if (stats == null) TrafficStats() else {
-                            sum += stats
-                            stats
-                        })
+                        cb.trafficUpdated(
+                            udpFallback.profile.id,
+                            if (stats == null) {
+                                TrafficStats()
+                            } else {
+                                sum += stats
+                                stats
+                            },
+                        )
                     }
                 }
                 cb.trafficUpdated(0, sum)
@@ -192,7 +202,7 @@ object BaseService {
         }
 
         override fun unregisterCallback(cb: IShadowsocksServiceCallback) {
-            stopListeningForBandwidth(cb)   // saves an RPC, and safer
+            stopListeningForBandwidth(cb) // saves an RPC, and safer
             callbacks.unregister(cb)
         }
 
@@ -202,8 +212,10 @@ object BaseService {
         }
 
         fun trafficPersisted(ids: List<Long>) = launch {
-            if (bandwidthListeners.isNotEmpty() && ids.isNotEmpty()) broadcast { item ->
-                if (bandwidthListeners.contains(item.asBinder())) ids.forEach(item::trafficPersisted)
+            if (bandwidthListeners.isNotEmpty() && ids.isNotEmpty()) {
+                broadcast { item ->
+                    if (bandwidthListeners.contains(item.asBinder())) ids.forEach(item::trafficPersisted)
+                }
             }
         }
 
@@ -236,23 +248,36 @@ object BaseService {
             val context = if (Build.VERSION.SDK_INT < 24 || Core.user.isUserUnlocked) app else Core.deviceStorage
             val configRoot = context.noBackupFilesDir
             val udpFallback = data.udpFallback
-            data.proxy!!.start(this,
-                    File(Core.deviceStorage.noBackupFilesDir, "stat_main"),
-                    File(configRoot, CONFIG_FILE),
-                    if (udpFallback == null && data.proxy?.plugin == null) "tcp_and_udp" else "tcp_only")
-            if (udpFallback?.plugin != null) throw ExpectedExceptionWrapper(IllegalStateException(
-                    "UDP fallback cannot have plugins"))
-            udpFallback?.start(this,
-                    File(Core.deviceStorage.noBackupFilesDir, "stat_udp"),
-                    File(configRoot, CONFIG_FILE_UDP),
-                    "udp_only", false)
+            data.proxy!!.start(
+                this,
+                File(Core.deviceStorage.noBackupFilesDir, "stat_main"),
+                File(configRoot, CONFIG_FILE),
+                if (udpFallback == null && data.proxy?.plugin == null) "tcp_and_udp" else "tcp_only",
+            )
+            if (udpFallback?.plugin != null) {
+                throw ExpectedExceptionWrapper(
+                    IllegalStateException(
+                        "UDP fallback cannot have plugins",
+                    ),
+                )
+            }
+            udpFallback?.start(
+                this,
+                File(Core.deviceStorage.noBackupFilesDir, "stat_udp"),
+                File(configRoot, CONFIG_FILE_UDP),
+                "udp_only",
+                false,
+            )
             data.localDns = LocalDnsWorker(this::rawResolver).apply { start() }
         }
 
         fun startRunner() {
             this as Context
-            if (Build.VERSION.SDK_INT >= 26) startForegroundService(Intent(this, javaClass))
-            else startService(Intent(this, javaClass))
+            if (Build.VERSION.SDK_INT >= 26) {
+                startForegroundService(Intent(this, javaClass))
+            } else {
+                startService(Intent(this, javaClass))
+            }
         }
 
         fun killProcesses(scope: CoroutineScope) {
@@ -298,7 +323,9 @@ object BaseService {
                 data.changeState(State.Stopped, msg)
 
                 // stop the service if nothing has bound to it
-                if (restart) startRunner() else {
+                if (restart) {
+                    startRunner()
+                } else {
                     BootReceiver.enabled = false
                     stopSelf()
                 }
@@ -306,7 +333,7 @@ object BaseService {
         }
 
         fun persistStats() =
-                listOfNotNull(data.proxy, data.udpFallback).forEach { it.trafficMonitor?.persistStats(it.profile.id) }
+            listOfNotNull(data.proxy, data.udpFallback).forEach { it.trafficMonitor?.persistStats(it.profile.id) }
 
         suspend fun preInit() { }
         suspend fun rawResolver(query: ByteArray) = DnsResolverCompat.resolveRawOnActiveNetwork(query)
@@ -335,11 +362,16 @@ object BaseService {
 
             BootReceiver.enabled = DataStore.persistAcrossReboot
             if (!data.closeReceiverRegistered) {
-                ContextCompat.registerReceiver(this, data.closeReceiver, IntentFilter().apply {
-                    addAction(Action.RELOAD)
-                    addAction(Intent.ACTION_SHUTDOWN)
-                    addAction(Action.CLOSE)
-                }, ContextCompat.RECEIVER_NOT_EXPORTED)
+                ContextCompat.registerReceiver(
+                    this,
+                    data.closeReceiver,
+                    IntentFilter().apply {
+                        addAction(Action.RELOAD)
+                        addAction(Intent.ACTION_SHUTDOWN)
+                        addAction(Action.CLOSE)
+                    },
+                    ContextCompat.RECEIVER_NOT_EXPORTED,
+                )
                 data.closeReceiverRegistered = true
             }
 
@@ -349,16 +381,18 @@ object BaseService {
             data.changeState(State.Connecting)
             data.connectingJob = GlobalScope.launch(Dispatchers.Main) {
                 try {
-                    Executable.killAll()    // clean up old processes
+                    Executable.killAll() // clean up old processes
                     preInit()
-                    if (profile.route == Acl.CUSTOM_RULES) try {
-                        withContext(Dispatchers.IO) {
-                            Acl.customRules.flatten(10, this@Interface::openConnection).also {
-                                Acl.save(Acl.CUSTOM_RULES, it)
+                    if (profile.route == Acl.CUSTOM_RULES) {
+                        try {
+                            withContext(Dispatchers.IO) {
+                                Acl.customRules.flatten(10, this@Interface::openConnection).also {
+                                    Acl.save(Acl.CUSTOM_RULES, it)
+                                }
                             }
+                        } catch (e: IOException) {
+                            throw ExpectedExceptionWrapper(e)
                         }
-                    } catch (e: IOException) {
-                        throw ExpectedExceptionWrapper(e)
                     }
 
                     data.processes = GuardedProcessPool {

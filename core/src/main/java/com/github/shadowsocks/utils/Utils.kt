@@ -66,20 +66,23 @@ val Throwable.readableMessage get() = localizedMessage ?: javaClass.name
 private val getInt = FileDescriptor::class.java.getDeclaredMethod("getInt$")
 val FileDescriptor.int get() = getInt.invoke(this) as Int
 
-private val parseNumericAddress by lazy @SuppressLint("SoonBlockedPrivateApi") {
-    InetAddress::class.java.getDeclaredMethod("parseNumericAddress", String::class.java).apply {
-        isAccessible = true
+private val parseNumericAddress by lazy
+    @SuppressLint("SoonBlockedPrivateApi")
+    {
+        InetAddress::class.java.getDeclaredMethod("parseNumericAddress", String::class.java).apply {
+            isAccessible = true
+        }
     }
-}
+
 /**
  * A slightly more performant variant of parseNumericAddress.
  *
  * Bug in Android 9.0 and lower: https://issuetracker.google.com/issues/123456213
  */
 fun String?.parseNumericAddress(): InetAddress? = Os.inet_pton(OsConstants.AF_INET, this)
-        ?: Os.inet_pton(OsConstants.AF_INET6, this)?.let {
-            if (Build.VERSION.SDK_INT >= 29) it else parseNumericAddress.invoke(null, this) as InetAddress
-        }
+    ?: Os.inet_pton(OsConstants.AF_INET6, this)?.let {
+        if (Build.VERSION.SDK_INT >= 29) it else parseNumericAddress.invoke(null, this) as InetAddress
+    }
 
 suspend fun <T> HttpURLConnection.useCancellable(block: suspend HttpURLConnection.() -> T): T {
     return suspendCancellableCoroutine { cont ->
@@ -112,15 +115,23 @@ fun Context.listenForPackageChanges(onetime: Boolean = true, callback: () -> Uni
         if (onetime) context.unregisterReceiver(this)
     }
 }.apply {
-    registerReceiver(this, IntentFilter().apply {
-        addAction(Intent.ACTION_PACKAGE_ADDED)
-        addAction(Intent.ACTION_PACKAGE_REMOVED)
-        addDataScheme("package")
-    })
+    registerReceiver(
+        this,
+        IntentFilter().apply {
+            addAction(Intent.ACTION_PACKAGE_ADDED)
+            addAction(Intent.ACTION_PACKAGE_REMOVED)
+            addDataScheme("package")
+        },
+    )
 }
 
 val PackageInfo.signaturesCompat get() =
-    if (Build.VERSION.SDK_INT >= 28) signingInfo.apkContentsSigners else @Suppress("DEPRECATION") signatures
+    if (Build.VERSION.SDK_INT >= 28) {
+        signingInfo.apkContentsSigners
+    } else {
+        @Suppress("DEPRECATION")
+        signatures
+    }
 
 /**
  * Based on: https://stackoverflow.com/a/26348729/2245107

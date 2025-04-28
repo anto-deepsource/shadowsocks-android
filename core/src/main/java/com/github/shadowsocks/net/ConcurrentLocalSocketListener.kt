@@ -25,8 +25,9 @@ import kotlinx.coroutines.*
 import timber.log.Timber
 import java.io.File
 
-abstract class ConcurrentLocalSocketListener(name: String, socketFile: File) : LocalSocketListener(name, socketFile),
-        CoroutineScope {
+abstract class ConcurrentLocalSocketListener(name: String, socketFile: File) :
+    LocalSocketListener(name, socketFile),
+    CoroutineScope {
     override val coroutineContext = Dispatchers.IO + SupervisorJob() + CoroutineExceptionHandler { _, t -> Timber.w(t) }
 
     override fun accept(socket: LocalSocket) {

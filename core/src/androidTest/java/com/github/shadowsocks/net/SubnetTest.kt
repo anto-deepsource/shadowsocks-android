@@ -10,10 +10,14 @@ class SubnetTest {
     fun parsingAndEquals() {
         Assert.assertEquals(Subnet(InetAddress.getByName("1.10.11.12"), 25), Subnet.fromString("1.10.11.12/25"))
         Assert.assertEquals(Subnet(InetAddress.getByName("12.118.130.86"), 32), Subnet.fromString("12.118.130.86"))
-        Assert.assertEquals(Subnet(InetAddress.getByName("caec:cec6:c4ef:bb7b:1a78:d055:216d:3a78"), 96),
-                Subnet.fromString("caec:cec6:c4ef:bb7b:1a78:d055:216d:3a78/96"))
-        Assert.assertEquals(Subnet(InetAddress.getByName("be37:44bd:8630:7a0:2a3d:ff95:dd33:42f0"), 128),
-                Subnet.fromString("be37:44bd:8630:7a0:2a3d:ff95:dd33:42f0"))
+        Assert.assertEquals(
+            Subnet(InetAddress.getByName("caec:cec6:c4ef:bb7b:1a78:d055:216d:3a78"), 96),
+            Subnet.fromString("caec:cec6:c4ef:bb7b:1a78:d055:216d:3a78/96"),
+        )
+        Assert.assertEquals(
+            Subnet(InetAddress.getByName("be37:44bd:8630:7a0:2a3d:ff95:dd33:42f0"), 128),
+            Subnet.fromString("be37:44bd:8630:7a0:2a3d:ff95:dd33:42f0"),
+        )
         Assert.assertNotEquals(Subnet.fromString("1.2.3.4/12"), Subnet.fromString("1.2.3.5/12"))
     }
 

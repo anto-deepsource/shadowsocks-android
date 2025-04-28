@@ -17,8 +17,12 @@ import java.io.DataOutputStream
 import java.io.File
 import java.io.IOException
 
-class LocalDnsWorker(private val resolver: suspend (ByteArray) -> ByteArray) : ConcurrentLocalSocketListener(
-        "LocalDnsThread", File(Core.deviceStorage.noBackupFilesDir, "local_dns_path")), CoroutineScope {
+class LocalDnsWorker(private val resolver: suspend (ByteArray) -> ByteArray) :
+    ConcurrentLocalSocketListener(
+        "LocalDnsThread",
+        File(Core.deviceStorage.noBackupFilesDir, "local_dns_path"),
+    ),
+    CoroutineScope {
     override fun acceptInternal(socket: LocalSocket) = error("big no no")
     override fun accept(socket: LocalSocket) {
         launch {
@@ -26,7 +30,7 @@ class LocalDnsWorker(private val resolver: suspend (ByteArray) -> ByteArray) : C
                 val input = DataInputStream(socket.inputStream)
                 val query = try {
                     ByteArray(input.readUnsignedShort()).also { input.read(it) }
-                } catch (e: IOException) {  // connection early close possibly due to resolving timeout
+                } catch (e: IOException) { // connection early close possibly due to resolving timeout
                     return@use Timber.d(e)
                 }
                 try {
@@ -44,7 +48,7 @@ class LocalDnsWorker(private val resolver: suspend (ByteArray) -> ByteArray) : C
                             header.rcode = Rcode.SERVFAIL
                         }.toWire()
                     } catch (_: IOException) {
-                        byteArrayOf()   // return empty if cannot parse packet
+                        byteArrayOf() // return empty if cannot parse packet
                     }
                 }?.let { response ->
                     try {

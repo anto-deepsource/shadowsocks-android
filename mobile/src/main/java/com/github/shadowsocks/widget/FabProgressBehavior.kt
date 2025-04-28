@@ -31,12 +31,17 @@ class FabProgressBehavior(context: Context, attrs: AttributeSet?) :
     override fun layoutDependsOn(parent: CoordinatorLayout, child: CircularProgressIndicator, dependency: View) =
         dependency.id == (child.layoutParams as CoordinatorLayout.LayoutParams).anchorId
 
-    override fun onLayoutChild(parent: CoordinatorLayout, child: CircularProgressIndicator,
-                               layoutDirection: Int): Boolean {
+    override fun onLayoutChild(
+        parent: CoordinatorLayout,
+        child: CircularProgressIndicator,
+        layoutDirection: Int,
+    ): Boolean {
         val size = parent.getDependencies(child).single().measuredHeight + child.trackThickness
         return if (child.indicatorSize != size) {
             child.indicatorSize = size
             true
-        } else false
+        } else {
+            false
+        }
     }
 }

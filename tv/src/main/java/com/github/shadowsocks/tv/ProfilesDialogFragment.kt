@@ -56,8 +56,12 @@ class ProfilesDialogFragment : LeanbackListPreferenceDialogFragmentCompat() {
         val profiles = ProfileManager.getActiveProfiles()!!
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) = ProfileViewHolder(
-                LayoutInflater.from(parent.context).inflate(R.layout.leanback_list_preference_item_single_2,
-                        parent, false))
+            LayoutInflater.from(parent.context).inflate(
+                R.layout.leanback_list_preference_item_single_2,
+                parent,
+                false,
+            ),
+        )
 
         override fun onBindViewHolder(holder: ProfileViewHolder, position: Int) {
             val profile = profiles[position]
@@ -67,8 +71,12 @@ class ProfilesDialogFragment : LeanbackListPreferenceDialogFragmentCompat() {
                 if (!profile.name.isNullOrEmpty()) this += profile.formattedAddress
                 val id = PluginConfiguration(profile.plugin ?: "").selected
                 if (id.isNotEmpty()) this += getString(R.string.profile_plugin, id)
-                if (profile.tx > 0 || profile.rx > 0) this += getString(R.string.traffic,
-                        Formatter.formatFileSize(activity, profile.tx), Formatter.formatFileSize(activity, profile.rx))
+                if (profile.tx > 0 || profile.rx > 0) {
+                    this += getString(
+                        R.string.traffic,
+                        Formatter.formatFileSize(activity, profile.tx), Formatter.formatFileSize(activity, profile.rx),
+                    )
+                }
             }.joinToString("\n")
         }
 

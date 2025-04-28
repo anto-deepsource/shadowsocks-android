@@ -54,7 +54,8 @@ class ProxyInstance(val profile: Profile, private val route: String = profile.ro
                 "2022-blake3-aes-128-gcm",
                 "2022-blake3-aes-256-gcm",
                 "2022-blake3-chacha20-poly1305",
-            )) {
+            )
+        ) {
             for (pwd in profile.password.split(":")) {
                 require(Base64.decode(pwd, Base64.DEFAULT).size in arrayOf(16, 32)) {
                     "The Base64 Key is invalid."
@@ -85,39 +86,50 @@ class ProxyInstance(val profile: Profile, private val route: String = profile.ro
             config.put("plugin", path).put("plugin_opts", opts.toString())
         }
         config.put("dns", "system")
-        config.put("locals", JSONArray().apply {
-            // local SOCKS5 proxy
-            put(JSONObject().apply {
-                put("local_address", DataStore.listenAddress)
-                put("local_port", DataStore.portProxy)
-                put("local_udp_address", DataStore.listenAddress)
-                put("local_udp_port", DataStore.portProxy)
-                put("mode", mode)
-            })
+        config.put(
+            "locals",
+            JSONArray().apply {
+                // local SOCKS5 proxy
+                put(
+                    JSONObject().apply {
+                        put("local_address", DataStore.listenAddress)
+                        put("local_port", DataStore.portProxy)
+                        put("local_udp_address", DataStore.listenAddress)
+                        put("local_udp_port", DataStore.portProxy)
+                        put("mode", mode)
+                    },
+                )
 
-            // local DNS proxy
-            if (dnsRelay) try {
-                URI("dns://${profile.remoteDns}")
-            } catch (e: URISyntaxException) {
-                throw BaseService.ExpectedExceptionWrapper(e)
-            }.let { dns ->
-                put(JSONObject().apply {
-                    put("local_address", DataStore.listenAddress)
-                    put("local_port", DataStore.portLocalDns)
-                    put("local_dns_address", "local_dns_path")
-                    put("remote_dns_address", dns.host ?: "0.0.0.0")
-                    put("remote_dns_port", if (dns.port < 0) 53 else dns.port)
-                    put("protocol", "dns")
-                })
-            }
-        })
+                // local DNS proxy
+                if (dnsRelay) {
+                    try {
+                        URI("dns://${profile.remoteDns}")
+                    } catch (e: URISyntaxException) {
+                        throw BaseService.ExpectedExceptionWrapper(e)
+                    }.let { dns ->
+                        put(
+                            JSONObject().apply {
+                                put("local_address", DataStore.listenAddress)
+                                put("local_port", DataStore.portLocalDns)
+                                put("local_dns_address", "local_dns_path")
+                                put("remote_dns_address", dns.host ?: "0.0.0.0")
+                                put("remote_dns_port", if (dns.port < 0) 53 else dns.port)
+                                put("protocol", "dns")
+                            },
+                        )
+                    }
+                }
+            },
+        )
         configFile.writeText(config.toString())
 
         // build the command line
         val cmd = arrayListOf(
-                File((service as Context).applicationInfo.nativeLibraryDir, Executable.SS_LOCAL).absolutePath,
-                "--stat-path", stat.absolutePath,
-                "-c", configFile.absolutePath,
+            File((service as Context).applicationInfo.nativeLibraryDir, Executable.SS_LOCAL).absolutePath,
+            "--stat-path",
+            stat.absolutePath,
+            "-c",
+            configFile.absolutePath,
         )
 
         if (service.isVpnService) cmd += "--vpn"
@@ -137,10 +149,10 @@ class ProxyInstance(val profile: Profile, private val route: String = profile.ro
     fun shutdown(scope: CoroutineScope) {
         trafficMonitor?.apply {
             thread.shutdown(scope)
-            persistStats(profile.id)    // Make sure update total traffic when stopping the runner
+            persistStats(profile.id) // Make sure update total traffic when stopping the runner
         }
         trafficMonitor = null
-        configFile?.delete()    // remove old config possibly in device storage
+        configFile?.delete() // remove old config possibly in device storage
         configFile = null
     }
 }

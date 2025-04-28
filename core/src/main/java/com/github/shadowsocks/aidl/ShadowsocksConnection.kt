@@ -56,6 +56,7 @@ class ShadowsocksConnection(private var listenForDeath: Boolean = false) : Servi
         fun trafficPersisted(profileId: Long) { }
 
         fun onServiceConnected(service: IShadowsocksService)
+
         /**
          * Different from Android framework, this method will be called even when you call `detachService`.
          */
@@ -87,8 +88,11 @@ class ShadowsocksConnection(private var listenForDeath: Boolean = false) : Servi
     var bandwidthTimeout = 0L
         set(value) {
             try {
-                if (value > 0) service?.startListeningForBandwidth(serviceCallback, value)
-                else service?.stopListeningForBandwidth(serviceCallback)
+                if (value > 0) {
+                    service?.startListeningForBandwidth(serviceCallback, value)
+                } else {
+                    service?.stopListeningForBandwidth(serviceCallback)
+                }
             } catch (_: RemoteException) { }
             field = value
         }
@@ -123,9 +127,11 @@ class ShadowsocksConnection(private var listenForDeath: Boolean = false) : Servi
 
     private fun unregisterCallback() {
         val service = service
-        if (service != null && callbackRegistered) try {
-            service.unregisterCallback(serviceCallback)
-        } catch (_: RemoteException) { }
+        if (service != null && callbackRegistered) {
+            try {
+                service.unregisterCallback(serviceCallback)
+            } catch (_: RemoteException) { }
+        }
         callbackRegistered = false
     }
 
@@ -140,13 +146,17 @@ class ShadowsocksConnection(private var listenForDeath: Boolean = false) : Servi
 
     fun disconnect(context: Context) {
         unregisterCallback()
-        if (connectionActive) try {
-            context.unbindService(this)
-        } catch (_: IllegalArgumentException) { }   // ignore
+        if (connectionActive) {
+            try {
+                context.unbindService(this)
+            } catch (_: IllegalArgumentException) { } // ignore
+        }
         connectionActive = false
-        if (listenForDeath) try {
-            binder?.unlinkToDeath(this, 0)
-        } catch (_: NoSuchElementException) { }
+        if (listenForDeath) {
+            try {
+                binder?.unlinkToDeath(this, 0)
+            } catch (_: NoSuchElementException) { }
+        }
         binder = null
         try {
             service?.stopListeningForBandwidth(serviceCallback)

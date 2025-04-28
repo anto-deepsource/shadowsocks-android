@@ -68,9 +68,13 @@ class UrlImportActivity : AppCompatActivity() {
 
     private fun handleShareIntent() = intent.data?.toString()?.let { sharedStr ->
         val profiles = Profile.findAllUrls(sharedStr, Core.currentProfile?.main).toList()
-        if (profiles.isEmpty()) null else ImportProfilesDialogFragment().apply {
-            arg(ProfilesArg(profiles))
-            key()
+        if (profiles.isEmpty()) {
+            null
+        } else {
+            ImportProfilesDialogFragment().apply {
+                arg(ProfilesArg(profiles))
+                key()
+            }
         }
     }
 }

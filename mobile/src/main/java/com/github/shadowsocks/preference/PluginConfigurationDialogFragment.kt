@@ -33,7 +33,7 @@ import com.github.shadowsocks.plugin.PluginManager
 class PluginConfigurationDialogFragment : EditTextPreferenceDialogFragmentCompat() {
     companion object {
         private const val PLUGIN_ID_FRAGMENT_TAG =
-                "com.github.shadowsocks.preference.PluginConfigurationDialogFragment.PLUGIN_ID"
+            "com.github.shadowsocks.preference.PluginConfigurationDialogFragment.PLUGIN_ID"
     }
 
     fun setArg(key: String, plugin: String) {
@@ -44,11 +44,15 @@ class PluginConfigurationDialogFragment : EditTextPreferenceDialogFragmentCompat
 
     override fun onPrepareDialogBuilder(builder: AlertDialog.Builder) {
         super.onPrepareDialogBuilder(builder)
-        val intent = PluginManager.buildIntent(arguments?.getString(PLUGIN_ID_FRAGMENT_TAG)!!,
-                PluginContract.ACTION_HELP)
+        val intent = PluginManager.buildIntent(
+            arguments?.getString(PLUGIN_ID_FRAGMENT_TAG)!!,
+            PluginContract.ACTION_HELP,
+        )
         val activity = activity as ProfileConfigActivity
-        if (intent.resolveActivity(activity.packageManager) != null) builder.setNeutralButton("?") { _, _ ->
-            activity.pluginHelp.launch(intent.putExtra(PluginContract.EXTRA_OPTIONS, editText.text.toString()))
+        if (intent.resolveActivity(activity.packageManager) != null) {
+            builder.setNeutralButton("?") { _, _ ->
+                activity.pluginHelp.launch(intent.putExtra(PluginContract.EXTRA_OPTIONS, editText.text.toString()))
+            }
         }
     }
 

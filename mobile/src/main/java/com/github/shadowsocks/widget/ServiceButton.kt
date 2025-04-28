@@ -37,13 +37,12 @@ import com.github.shadowsocks.R
 import com.github.shadowsocks.bg.BaseService
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.progressindicator.BaseProgressIndicator
-import com.google.android.material.progressindicator.DeterminateDrawable
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import java.util.*
 
 class ServiceButton @JvmOverloads constructor(context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0) :
-        FloatingActionButton(context, attrs, defStyleAttr), DynamicAnimation.OnAnimationEndListener {
+    FloatingActionButton(context, attrs, defStyleAttr), DynamicAnimation.OnAnimationEndListener {
 
     private val callback = object : Animatable2Compat.AnimationCallback() {
         override fun onAnimationEnd(drawable: Drawable) {
@@ -57,8 +56,10 @@ class ServiceButton @JvmOverloads constructor(context: Context, attrs: Attribute
         }
     }
 
-    private inner class AnimatedState(@DrawableRes resId: Int,
-                                      private val onStart: BaseProgressIndicator<*>.() -> Unit = { hideProgress() }) {
+    private inner class AnimatedState(
+        @DrawableRes resId: Int,
+        private val onStart: BaseProgressIndicator<*>.() -> Unit = { hideProgress() },
+    ) {
         val icon: AnimatedVectorDrawableCompat = AnimatedVectorDrawableCompat.create(context, resId)!!.apply {
             registerAnimationCallback(this@ServiceButton.callback)
         }
@@ -97,8 +98,12 @@ class ServiceButton @JvmOverloads constructor(context: Context, attrs: Attribute
         this.progress = progress
         progress.progressDrawable?.addSpringAnimationEndListener(this)
     }
-    override fun onAnimationEnd(animation: DynamicAnimation<out DynamicAnimation<*>>?, canceled: Boolean, value: Float,
-                                velocity: Float) {
+    override fun onAnimationEnd(
+        animation: DynamicAnimation<out DynamicAnimation<*>>?,
+        canceled: Boolean,
+        value: Float,
+        velocity: Float,
+    ) {
         if (!canceled) progress.hide()
     }
 
@@ -129,13 +134,17 @@ class ServiceButton @JvmOverloads constructor(context: Context, attrs: Attribute
         TooltipCompat.setTooltipText(this, description)
         val enabled = state.canStop || state == BaseService.State.Stopped
         isEnabled = enabled
-        if (Build.VERSION.SDK_INT >= 24) pointerIcon = PointerIcon.getSystemIcon(context,
-                if (enabled) PointerIcon.TYPE_HAND else PointerIcon.TYPE_WAIT)
+        if (Build.VERSION.SDK_INT >= 24) {
+            pointerIcon = PointerIcon.getSystemIcon(
+                context,
+                if (enabled) PointerIcon.TYPE_HAND else PointerIcon.TYPE_WAIT,
+            )
+        }
     }
 
     private fun changeState(icon: AnimatedState, animate: Boolean) {
         fun counters(a: AnimatedState, b: AnimatedState): Boolean =
-                a == iconStopped && b == iconConnecting ||
+            a == iconStopped && b == iconConnecting ||
                 a == iconConnecting && b == iconStopped ||
                 a == iconConnected && b == iconStopping ||
                 a == iconStopping && b == iconConnected
@@ -143,11 +152,13 @@ class ServiceButton @JvmOverloads constructor(context: Context, attrs: Attribute
             if (animationQueue.size < 2 || !counters(animationQueue.last, icon)) {
                 animationQueue.add(icon)
                 if (animationQueue.size == 1) icon.start()
-            } else animationQueue.removeLast()
+            } else {
+                animationQueue.removeLast()
+            }
         } else {
             animationQueue.peekFirst()?.stop()
             animationQueue.clear()
-            icon.start()    // force ensureAnimatorSet to be called so that stop() will work
+            icon.start() // force ensureAnimatorSet to be called so that stop() will work
             icon.stop()
         }
     }

@@ -30,6 +30,7 @@ class KeyValuePair() {
         const val TYPE_UNINITIALIZED = 0
         const val TYPE_BOOLEAN = 1
         const val TYPE_FLOAT = 2
+
         @Deprecated("Use TYPE_LONG.")
         const val TYPE_INT = 3
         const val TYPE_LONG = 4
@@ -58,13 +59,15 @@ class KeyValuePair() {
         get() = if (valueType == TYPE_BOOLEAN) ByteBuffer.wrap(value).get() != 0.toByte() else null
     val float: Float?
         get() = if (valueType == TYPE_FLOAT) ByteBuffer.wrap(value).float else null
+
     @Suppress("DEPRECATION")
     @Deprecated("Use long.", ReplaceWith("long"))
     val int: Int?
         get() = if (valueType == TYPE_INT) ByteBuffer.wrap(value).int else null
     val long: Long? get() = when (valueType) {
         @Suppress("DEPRECATION")
-        TYPE_INT -> ByteBuffer.wrap(value).int.toLong()
+        TYPE_INT,
+        -> ByteBuffer.wrap(value).int.toLong()
         TYPE_LONG -> ByteBuffer.wrap(value).long
         else -> null
     }
@@ -80,7 +83,9 @@ class KeyValuePair() {
                 result.add(String(chArr))
             }
             result
-        } else null
+        } else {
+            null
+        }
 
     @Ignore
     constructor(key: String) : this() {
@@ -98,6 +103,7 @@ class KeyValuePair() {
         this.value = ByteBuffer.allocate(4).putFloat(value).array()
         return this
     }
+
     @Suppress("DEPRECATION")
     @Deprecated("Use long.")
     fun put(value: Int): KeyValuePair {

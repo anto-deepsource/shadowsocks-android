@@ -38,9 +38,12 @@ import com.google.android.material.bottomappbar.BottomAppBar
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-class StatsBar @JvmOverloads constructor(context: Context, attrs: AttributeSet? = null,
-                                         defStyleAttr: Int = R.attr.bottomAppBarStyle) :
-        BottomAppBar(context, attrs, defStyleAttr) {
+class StatsBar @JvmOverloads constructor(
+    context: Context,
+    attrs: AttributeSet? = null,
+    defStyleAttr: Int = R.attr.bottomAppBarStyle,
+) :
+    BottomAppBar(context, attrs, defStyleAttr) {
     private lateinit var statusText: TextView
     private lateinit var txText: TextView
     private lateinit var rxText: TextView
@@ -49,12 +52,24 @@ class StatsBar @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
     private val tester by (context as MainActivity).viewModels<HttpsTest>()
     private lateinit var behavior: Behavior
     override fun getBehavior(): Behavior {
-        if (!this::behavior.isInitialized) behavior = object : Behavior() {
-            override fun onNestedScroll(coordinatorLayout: CoordinatorLayout, child: BottomAppBar, target: View,
-                                        dxConsumed: Int, dyConsumed: Int, dxUnconsumed: Int, dyUnconsumed: Int,
-                                        type: Int, consumed: IntArray) {
-                super.onNestedScroll(coordinatorLayout, child, target, dxConsumed, dyConsumed + dyUnconsumed,
-                        dxUnconsumed, 0, type, consumed)
+        if (!this::behavior.isInitialized) {
+            behavior = object : Behavior() {
+                override fun onNestedScroll(
+                    coordinatorLayout: CoordinatorLayout,
+                    child: BottomAppBar,
+                    target: View,
+                    dxConsumed: Int,
+                    dyConsumed: Int,
+                    dxUnconsumed: Int,
+                    dyUnconsumed: Int,
+                    type: Int,
+                    consumed: IntArray,
+                ) {
+                    super.onNestedScroll(
+                        coordinatorLayout, child, target, dxConsumed, dyConsumed + dyUnconsumed,
+                        dxUnconsumed, 0, type, consumed,
+                    )
+                }
             }
         }
         return behavior
@@ -87,11 +102,15 @@ class StatsBar @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
             updateTraffic(0, 0, 0, 0)
             tester.status.removeObservers(activity)
             if (state != BaseService.State.Idle) tester.invalidate()
-            setStatus(context.getText(when (state) {
-                BaseService.State.Connecting -> R.string.connecting
-                BaseService.State.Stopping -> R.string.stopping
-                else -> R.string.not_connected
-            }))
+            setStatus(
+                context.getText(
+                    when (state) {
+                        BaseService.State.Connecting -> R.string.connecting
+                        BaseService.State.Stopping -> R.string.stopping
+                        else -> R.string.not_connected
+                    },
+                ),
+            )
         }
     }
 

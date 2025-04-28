@@ -43,8 +43,10 @@ object ListHolderListener : OnApplyWindowInsetsListener {
 
 object MainListListener : OnApplyWindowInsetsListener {
     override fun onApplyWindowInsets(view: View, insets: WindowInsetsCompat) = insets.apply {
-        view.updatePadding(bottom = view.resources.getDimensionPixelOffset(R.dimen.main_list_padding_bottom) +
-                insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom)
+        view.updatePadding(
+            bottom = view.resources.getDimensionPixelOffset(R.dimen.main_list_padding_bottom) +
+                insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom,
+        )
     }
 }
 

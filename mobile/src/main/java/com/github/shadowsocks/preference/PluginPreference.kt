@@ -31,7 +31,7 @@ import com.github.shadowsocks.plugin.PluginManager
 class PluginPreference(context: Context, attrs: AttributeSet? = null) : ListPreference(context, attrs) {
     companion object FallbackProvider : SummaryProvider<PluginPreference> {
         override fun provideSummary(preference: PluginPreference) =
-                preference.selectedEntry?.label ?: preference.unknownValueSummary.format(preference.value)
+            preference.selectedEntry?.label ?: preference.unknownValueSummary.format(preference.value)
     }
 
     lateinit var plugins: PluginList
@@ -52,7 +52,9 @@ class PluginPreference(context: Context, attrs: AttributeSet? = null) : ListPref
                 value = newValue.toString()
                 icon = entryIcon
                 true
-            } else false
+            } else {
+                false
+            }
         }
     }
 

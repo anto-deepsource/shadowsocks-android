@@ -52,9 +52,11 @@ import kotlinx.coroutines.tasks.await
 import timber.log.Timber
 
 class ScannerActivity : AppCompatActivity(), ImageAnalysis.Analyzer {
-    private val scanner = BarcodeScanning.getClient(BarcodeScannerOptions.Builder().apply {
-        setBarcodeFormats(Barcode.FORMAT_QR_CODE)
-    }.build())
+    private val scanner = BarcodeScanning.getClient(
+        BarcodeScannerOptions.Builder().apply {
+            setBarcodeFormats(Barcode.FORMAT_QR_CODE)
+        }.build(),
+    )
     private val imageAnalysis by lazy {
         ImageAnalysis.Builder().apply {
             setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
@@ -92,24 +94,32 @@ class ScannerActivity : AppCompatActivity(), ImageAnalysis.Analyzer {
         requestCamera.launch(Manifest.permission.CAMERA)
     }
     private val requestCamera = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (granted) lifecycleScope.launchWhenCreated {
-            val cameraProvider = ProcessCameraProvider.getInstance(this@ScannerActivity).await()
-            val selector = if (cameraProvider.hasCamera(CameraSelector.DEFAULT_BACK_CAMERA)) {
-                CameraSelector.DEFAULT_BACK_CAMERA
-            } else CameraSelector.DEFAULT_FRONT_CAMERA
-            val preview = Preview.Builder().build()
-            preview.setSurfaceProvider(findViewById<PreviewView>(R.id.barcode).surfaceProvider)
-            try {
-                cameraProvider.bindToLifecycle(this@ScannerActivity, selector, preview, imageAnalysis)
-            } catch (e: IllegalArgumentException) {
-                Timber.d(e)
-                startImport()
+        if (granted) {
+            lifecycleScope.launchWhenCreated {
+                val cameraProvider = ProcessCameraProvider.getInstance(this@ScannerActivity).await()
+                val selector = if (cameraProvider.hasCamera(CameraSelector.DEFAULT_BACK_CAMERA)) {
+                    CameraSelector.DEFAULT_BACK_CAMERA
+                } else {
+                    CameraSelector.DEFAULT_FRONT_CAMERA
+                }
+                val preview = Preview.Builder().build()
+                preview.setSurfaceProvider(findViewById<PreviewView>(R.id.barcode).surfaceProvider)
+                try {
+                    cameraProvider.bindToLifecycle(this@ScannerActivity, selector, preview, imageAnalysis)
+                } catch (e: IllegalArgumentException) {
+                    Timber.d(e)
+                    startImport()
+                }
             }
-        } else permissionMissing()
+        } else {
+            permissionMissing()
+        }
     }
 
-    private suspend inline fun process(feature: Profile? = Core.currentProfile?.main,
-                                       crossinline image: () -> InputImage): Boolean {
+    private suspend inline fun process(
+        feature: Profile? = Core.currentProfile?.main,
+        crossinline image: () -> InputImage,
+    ): Boolean {
         val barcodes = withContext(Dispatchers.Default) { scanner.process(image()).await() }
         var result = false
         for (profile in Profile.findAllUrls(barcodes.mapNotNull { it.rawValue }.joinToString("\n"), feature)) {
@@ -154,18 +164,23 @@ class ScannerActivity : AppCompatActivity(), ImageAnalysis.Analyzer {
         importOrFinish(it, true)
     }
     private fun importOrFinish(dataUris: List<Uri>, finish: Boolean = false) {
-        if (dataUris.isNotEmpty()) GlobalScope.launch(Dispatchers.Main.immediate) {
-            onSupportNavigateUp()
-            val feature = Core.currentProfile?.main
-            try {
-                var success = false
-                dataUris.forEachTry { uri ->
-                    if (process(feature) { InputImage.fromFilePath(app, uri) }) success = true
+        if (dataUris.isNotEmpty()) {
+            GlobalScope.launch(Dispatchers.Main.immediate) {
+                onSupportNavigateUp()
+                val feature = Core.currentProfile?.main
+                try {
+                    var success = false
+                    dataUris.forEachTry { uri ->
+                        if (process(feature) { InputImage.fromFilePath(app, uri) }) success = true
+                    }
+                    Toast.makeText(
+                        app,
+                        if (success) R.string.action_import_msg else R.string.action_import_err,
+                        Toast.LENGTH_SHORT,
+                    ).show()
+                } catch (e: Exception) {
+                    Toast.makeText(app, e.readableMessage, Toast.LENGTH_LONG).show()
                 }
-                Toast.makeText(app, if (success) R.string.action_import_msg else R.string.action_import_err,
-                        Toast.LENGTH_SHORT).show()
-            } catch (e: Exception) {
-                Toast.makeText(app, e.readableMessage, Toast.LENGTH_LONG).show()
             }
         } else if (finish) onSupportNavigateUp()
     }

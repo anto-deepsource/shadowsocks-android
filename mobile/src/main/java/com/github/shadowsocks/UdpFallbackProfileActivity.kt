@@ -65,13 +65,18 @@ class UdpFallbackProfileActivity : AppCompatActivity() {
 
     inner class ProfilesAdapter : RecyclerView.Adapter<ProfileViewHolder>() {
         internal val profiles = (ProfileManager.getActiveProfiles()?.toMutableList() ?: mutableListOf())
-                .filter { it.id != editingId && PluginConfiguration(it.plugin ?: "").selected.isEmpty() }
+            .filter { it.id != editingId && PluginConfiguration(it.plugin ?: "").selected.isEmpty() }
 
         override fun onBindViewHolder(holder: ProfileViewHolder, position: Int) =
-                holder.bind(if (position == 0) null else profiles[position - 1])
+            holder.bind(if (position == 0) null else profiles[position - 1])
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ProfileViewHolder = ProfileViewHolder(
-                LayoutInflater.from(parent.context).inflate(Resources.getSystem()
-                        .getIdentifier("select_dialog_singlechoice_material", "layout", "android"), parent, false))
+            LayoutInflater.from(parent.context).inflate(
+                Resources.getSystem()
+                    .getIdentifier("select_dialog_singlechoice_material", "layout", "android"),
+                parent,
+                false,
+            ),
+        )
         override fun getItemCount(): Int = 1 + profiles.size
     }
 
