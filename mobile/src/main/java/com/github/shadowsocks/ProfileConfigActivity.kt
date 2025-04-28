@@ -83,10 +83,12 @@ class ProfileConfigActivity : AppCompatActivity() {
     override fun onOptionsItemSelected(item: MenuItem) = child.onOptionsItemSelected(item)
 
     val pluginHelp = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-        (resultCode, data) ->
-        if (resultCode == Activity.RESULT_OK) AlertDialog.Builder(this)
+            (resultCode, data) ->
+        if (resultCode == Activity.RESULT_OK) {
+            AlertDialog.Builder(this)
                 .setTitle("?")
                 .setMessage(data?.getCharSequenceExtra(PluginContract.EXTRA_HELP_MESSAGE))
                 .show()
+        }
     }
 }

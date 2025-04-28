@@ -47,7 +47,9 @@ class PluginOptions : HashMap<String, String?> {
             "=" -> if (key == null) {
                 key = current.toString()
                 current.setLength(0)
-            } else current.append(nextToken)
+            } else {
+                current.append(nextToken)
+            }
             ";" -> {
                 if (key != null) {
                     put(key, current.toString())
@@ -73,7 +75,7 @@ class PluginOptions : HashMap<String, String?> {
      * @return Old value before put.
      */
     fun putWithDefault(key: String, value: String?, default: String? = null) =
-            if (value == null || value == default) remove(key) else put(key, value)
+        if (value == null || value == default) remove(key) else put(key, value)
 
     private fun append(result: StringBuilder, str: String) = str.indices.map { str[it] }.forEach {
         when (it) {

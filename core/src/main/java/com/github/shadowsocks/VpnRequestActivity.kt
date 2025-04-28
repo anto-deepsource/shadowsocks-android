@@ -46,7 +46,9 @@ class VpnRequestActivity : AppCompatActivity() {
         if (getSystemService<KeyguardManager>()!!.isKeyguardLocked) {
             receiver = broadcastReceiver { _, _ -> connect.launch(null) }
             registerReceiver(receiver, IntentFilter(Intent.ACTION_USER_PRESENT))
-        } else connect.launch(null)
+        } else {
+            connect.launch(null)
+        }
     }
 
     private val connect = registerForActivityResult(StartService()) {

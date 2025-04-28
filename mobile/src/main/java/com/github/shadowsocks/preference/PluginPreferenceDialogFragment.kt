@@ -50,8 +50,10 @@ class PluginPreferenceDialogFragment : PreferenceDialogFragmentCompat() {
         const val KEY_SELECTED_ID = "id"
     }
 
-    private inner class IconListViewHolder(val dialog: BottomSheetDialog, view: View) : RecyclerView.ViewHolder(view),
-            View.OnClickListener, View.OnLongClickListener {
+    private inner class IconListViewHolder(val dialog: BottomSheetDialog, view: View) :
+        RecyclerView.ViewHolder(view),
+        View.OnClickListener,
+        View.OnLongClickListener {
         private lateinit var plugin: Plugin
         private val text1 = view.findViewById<TextView>(android.R.id.text1)
         private val text2 = view.findViewById<TextView>(android.R.id.text2)
@@ -84,25 +86,36 @@ class PluginPreferenceDialogFragment : PreferenceDialogFragmentCompat() {
         }
 
         override fun onLongClick(v: View?) = try {
-            startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.Builder()
-                    .scheme("package")
-                    .opaquePart(plugin.packageName)
-                    .build()))
+            startActivity(
+                Intent(
+                    Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                    Uri.Builder()
+                        .scheme("package")
+                        .opaquePart(plugin.packageName)
+                        .build(),
+                ),
+            )
             true
         } catch (_: ActivityNotFoundException) {
             false
         }
     }
     private inner class IconListAdapter(private val dialog: BottomSheetDialog) :
-            RecyclerView.Adapter<IconListViewHolder>() {
+        RecyclerView.Adapter<IconListViewHolder>() {
         override fun getItemCount(): Int = preference.plugins.size
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) = IconListViewHolder(dialog,
-                LayoutInflater.from(parent.context).inflate(R.layout.icon_list_item_2, parent, false))
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) = IconListViewHolder(
+            dialog,
+            LayoutInflater.from(parent.context).inflate(R.layout.icon_list_item_2, parent, false),
+        )
         override fun onBindViewHolder(holder: IconListViewHolder, position: Int) {
-            if (selected < 0) holder.bind(preference.plugins[position]) else when (position) {
-                0 -> holder.bind(preference.selectedEntry!!, true)
-                in selected + 1..Int.MAX_VALUE -> holder.bind(preference.plugins[position])
-                else -> holder.bind(preference.plugins[position - 1])
+            if (selected < 0) {
+                holder.bind(preference.plugins[position])
+            } else {
+                when (position) {
+                    0 -> holder.bind(preference.selectedEntry!!, true)
+                    in selected + 1..Int.MAX_VALUE -> holder.bind(preference.plugins[position])
+                    else -> holder.bind(preference.plugins[position - 1])
+                }
             }
         }
     }
@@ -126,7 +139,8 @@ class PluginPreferenceDialogFragment : PreferenceDialogFragmentCompat() {
         recycler.itemAnimator = DefaultItemAnimator()
         recycler.adapter = IconListAdapter(dialog)
         recycler.layoutParams = ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT,
+        )
         dialog.setContentView(recycler)
         return dialog
     }

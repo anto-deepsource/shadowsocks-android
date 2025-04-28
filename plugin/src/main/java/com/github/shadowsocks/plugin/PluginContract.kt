@@ -39,6 +39,7 @@ object PluginContract {
      * Constant Value: "com.github.shadowsocks.plugin.ACTION_CONFIGURE"
      */
     const val ACTION_CONFIGURE = "com.github.shadowsocks.plugin.ACTION_CONFIGURE"
+
     /**
      * Activity Action: Used for HelpActivity or HelpCallback.
      *
@@ -54,6 +55,7 @@ object PluginContract {
      * Constant Value: "com.github.shadowsocks.plugin.EXTRA_ENTRY"
      */
     const val EXTRA_ENTRY = "com.github.shadowsocks.plugin.EXTRA_ENTRY"
+
     /**
      * The lookup key for a string that provides the options as a string.
      *
@@ -62,6 +64,7 @@ object PluginContract {
      * Constant Value: "com.github.shadowsocks.plugin.EXTRA_OPTIONS"
      */
     const val EXTRA_OPTIONS = "com.github.shadowsocks.plugin.EXTRA_OPTIONS"
+
     /**
      * The lookup key for a CharSequence that provides user relevant help message.
      *
@@ -69,7 +72,7 @@ object PluginContract {
      * obfs-host=<host_name>      Hostname for obfuscating (Experimental)."
      *
      * Constant Value: "com.github.shadowsocks.plugin.EXTRA_HELP_MESSAGE"
-    </host_name> */
+     </host_name> */
     const val EXTRA_HELP_MESSAGE = "com.github.shadowsocks.plugin.EXTRA_HELP_MESSAGE"
 
     /**
@@ -85,6 +88,7 @@ object PluginContract {
      * Constant Value: "com.github.shadowsocks.plugin.id"
      */
     const val METADATA_KEY_ID = "com.github.shadowsocks.plugin.id"
+
     /**
      * The metadata key to retrieve plugin id aliases.
      * Can be a string (representing one alias) or a resource to a string or string array.
@@ -92,12 +96,14 @@ object PluginContract {
      * Constant Value: "com.github.shadowsocks.plugin.id.aliases"
      */
     const val METADATA_KEY_ID_ALIASES = "com.github.shadowsocks.plugin.id.aliases"
+
     /**
      * The metadata key to retrieve default configuration. Default value is empty.
      *
      * Constant Value: "com.github.shadowsocks.plugin.default_config"
      */
     const val METADATA_KEY_DEFAULT_CONFIG = "com.github.shadowsocks.plugin.default_config"
+
     /**
      * The metadata key to retrieve executable path to your native binary.
      * This path should be relative to your application's nativeLibraryDir.
@@ -129,6 +135,7 @@ object PluginContract {
      * Type: String
      */
     const val COLUMN_PATH = "path"
+
     /**
      * File mode bits. Default value is 644 in octal.
      *
@@ -142,6 +149,7 @@ object PluginContract {
      * The scheme for general plugin actions.
      */
     const val SCHEME = "plugin"
+
     /**
      * The authority for general plugin actions.
      */

@@ -82,7 +82,7 @@ class ProfilesFragment : ToolbarFragment(), Toolbar.OnMenuItemClickListener, Sea
     private val isEnabled get() = (activity as MainActivity).state.let { it.canStop || it == BaseService.State.Stopped }
 
     private fun isProfileEditable(id: Long) =
-            (activity as MainActivity).state == BaseService.State.Stopped || id !in Core.activeProfileIds
+        (activity as MainActivity).state == BaseService.State.Stopped || id !in Core.activeProfileIds
 
     class QRCodeDialog() : DialogFragment() {
         constructor(url: String) : this() {
@@ -102,11 +102,13 @@ class ProfilesFragment : ToolbarFragment(), Toolbar.OnMenuItemClickListener, Sea
             val qrBits = MultiFormatWriter().encode(url, BarcodeFormat.QR_CODE, size, size, hints)
             ImageView(context).apply {
                 layoutParams = ViewGroup.LayoutParams(size, size)
-                setImageBitmap(Bitmap.createBitmap(size, size, Bitmap.Config.RGB_565).apply {
-                    for (x in 0 until size) for (y in 0 until size) {
-                        setPixel(x, y, if (qrBits.get(x, y)) Color.BLACK else Color.WHITE)
-                    }
-                })
+                setImageBitmap(
+                    Bitmap.createBitmap(size, size, Bitmap.Config.RGB_565).apply {
+                        for (x in 0 until size) for (y in 0 until size) {
+                            setPixel(x, y, if (qrBits.get(x, y)) Color.BLACK else Color.WHITE)
+                        }
+                    },
+                )
             }
         } catch (e: WriterException) {
             Timber.w(e)
@@ -116,8 +118,10 @@ class ProfilesFragment : ToolbarFragment(), Toolbar.OnMenuItemClickListener, Sea
         }
     }
 
-    inner class ProfileViewHolder(view: View) : RecyclerView.ViewHolder(view),
-            View.OnClickListener, PopupMenu.OnMenuItemClickListener {
+    inner class ProfileViewHolder(view: View) :
+        RecyclerView.ViewHolder(view),
+        View.OnClickListener,
+        PopupMenu.OnMenuItemClickListener {
         internal lateinit var item: Profile
 
         private val text1 = itemView.findViewById<TextView>(android.R.id.text1)
@@ -168,8 +172,14 @@ class ProfilesFragment : ToolbarFragment(), Toolbar.OnMenuItemClickListener, Sea
                 if (id.isNotEmpty()) this += getString(R.string.profile_plugin, id)
             }.joinToString("\n")
             val context = requireContext()
-            traffic.text = if (tx <= 0 && rx <= 0) null else getString(R.string.traffic,
-                    Formatter.formatFileSize(context, tx), Formatter.formatFileSize(context, rx))
+            traffic.text = if (tx <= 0 && rx <= 0) {
+                null
+            } else {
+                getString(
+                    R.string.traffic,
+                    Formatter.formatFileSize(context, tx), Formatter.formatFileSize(context, rx),
+                )
+            }
 
             if (item.id == DataStore.profileId) {
                 itemView.isSelected = true
@@ -207,7 +217,8 @@ class ProfilesFragment : ToolbarFragment(), Toolbar.OnMenuItemClickListener, Sea
             R.id.action_export_clipboard -> {
                 val success = Core.trySetPrimaryClip(this.item.toString(), true)
                 (activity as MainActivity).snackbar().setText(
-                        if (success) R.string.action_export_msg else R.string.action_export_err).show()
+                    if (success) R.string.action_export_msg else R.string.action_export_err,
+                ).show()
                 true
             }
             else -> false
@@ -219,12 +230,13 @@ class ProfilesFragment : ToolbarFragment(), Toolbar.OnMenuItemClickListener, Sea
         private val updated = HashSet<Profile>()
 
         init {
-            setHasStableIds(true)   // see: http://stackoverflow.com/a/32488059/2245107
+            setHasStableIds(true) // see: http://stackoverflow.com/a/32488059/2245107
         }
 
         override fun onBindViewHolder(holder: ProfileViewHolder, position: Int) = holder.bind(profiles[position])
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ProfileViewHolder = ProfileViewHolder(
-                LayoutInflater.from(parent.context).inflate(R.layout.layout_profile, parent, false))
+            LayoutInflater.from(parent.context).inflate(R.layout.layout_profile, parent, false),
+        )
 
         override fun getItemCount(): Int = profiles.size
         override fun getItemId(position: Int): Long = profiles[position].id
@@ -241,9 +253,11 @@ class ProfilesFragment : ToolbarFragment(), Toolbar.OnMenuItemClickListener, Sea
             profiles.clear()
             val locale = resources.configuration.locale
             val lower = name.lowercase(locale)
-            profiles.addAll(active.filter {
-                it.name?.lowercase(locale)?.contains(lower) == true || it.host.lowercase(locale).contains(lower)
-            })
+            profiles.addAll(
+                active.filter {
+                    it.name?.lowercase(locale)?.contains(lower) == true || it.host.lowercase(locale).contains(lower)
+                },
+            )
             notifyDataSetChanged()
         }
 
@@ -304,7 +318,7 @@ class ProfilesFragment : ToolbarFragment(), Toolbar.OnMenuItemClickListener, Sea
             if (index < 0) return
             profiles.removeAt(index)
             notifyItemRemoved(index)
-            if (profileId == DataStore.profileId) DataStore.profileId = 0   // switch to null profile
+            if (profileId == DataStore.profileId) DataStore.profileId = 0 // switch to null profile
         }
 
         override fun onCleared() {
@@ -340,7 +354,7 @@ class ProfilesFragment : ToolbarFragment(), Toolbar.OnMenuItemClickListener, Sea
     override fun onQueryTextSubmit(query: String): Boolean = false
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
-            inflater.inflate(R.layout.layout_list, container, false)
+        inflater.inflate(R.layout.layout_list, container, false)
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -365,15 +379,19 @@ class ProfilesFragment : ToolbarFragment(), Toolbar.OnMenuItemClickListener, Sea
         instance = this
         ProfileManager.listener = profilesAdapter
         undoManager = UndoSnackbarManager(activity as MainActivity, profilesAdapter::undo, profilesAdapter::commit)
-        ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(ItemTouchHelper.UP or ItemTouchHelper.DOWN,
-                ItemTouchHelper.START) {
+        ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(
+            ItemTouchHelper.UP or ItemTouchHelper.DOWN,
+            ItemTouchHelper.START,
+        ) {
             override fun getSwipeDirs(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder): Int =
-                    if (isProfileEditable((viewHolder as ProfileViewHolder).item.id)) {
-                        super.getSwipeDirs(recyclerView, viewHolder)
-                    } else 0
+                if (isProfileEditable((viewHolder as ProfileViewHolder).item.id)) {
+                    super.getSwipeDirs(recyclerView, viewHolder)
+                } else {
+                    0
+                }
 
             override fun getDragDirs(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder): Int =
-                    if (isEnabled) super.getDragDirs(recyclerView, viewHolder) else 0
+                if (isEnabled) super.getDragDirs(recyclerView, viewHolder) else 0
 
             override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
                 val index = viewHolder.bindingAdapterPosition
@@ -381,8 +399,11 @@ class ProfilesFragment : ToolbarFragment(), Toolbar.OnMenuItemClickListener, Sea
                 undoManager.remove(Pair(index, (viewHolder as ProfileViewHolder).item))
             }
 
-            override fun onMove(recyclerView: RecyclerView,
-                                viewHolder: RecyclerView.ViewHolder, target: RecyclerView.ViewHolder): Boolean {
+            override fun onMove(
+                recyclerView: RecyclerView,
+                viewHolder: RecyclerView.ViewHolder,
+                target: RecyclerView.ViewHolder,
+            ): Boolean {
                 profilesAdapter.move(viewHolder.bindingAdapterPosition, target.bindingAdapterPosition)
                 return true
             }
@@ -403,8 +424,8 @@ class ProfilesFragment : ToolbarFragment(), Toolbar.OnMenuItemClickListener, Sea
             R.id.action_import_clipboard -> {
                 try {
                     val profiles = Profile.findAllUrls(
-                            Core.clipboard.primaryClip!!.getItemAt(0).text,
-                            Core.currentProfile?.main
+                        Core.clipboard.primaryClip!!.getItemAt(0).text,
+                        Core.currentProfile?.main,
                     ).toList()
                     if (profiles.isNotEmpty()) {
                         profiles.forEach { ProfileManager.createProfile(it) }
@@ -426,15 +447,19 @@ class ProfilesFragment : ToolbarFragment(), Toolbar.OnMenuItemClickListener, Sea
                 true
             }
             R.id.action_manual_settings -> {
-                startConfig(ProfileManager.createProfile(
-                        Profile().also { Core.currentProfile?.main?.copyFeatureSettingsTo(it) }))
+                startConfig(
+                    ProfileManager.createProfile(
+                        Profile().also { Core.currentProfile?.main?.copyFeatureSettingsTo(it) },
+                    ),
+                )
                 true
             }
             R.id.action_export_clipboard -> {
                 val profiles = ProfileManager.getActiveProfiles()
                 val success = profiles != null && Core.trySetPrimaryClip(profiles.joinToString("\n"), true)
                 (activity as MainActivity).snackbar().setText(
-                        if (success) R.string.action_export_msg else R.string.action_export_err).show()
+                    if (success) R.string.action_export_msg else R.string.action_export_err,
+                ).show()
                 true
             }
             R.id.action_export_file -> {
@@ -458,9 +483,12 @@ class ProfilesFragment : ToolbarFragment(), Toolbar.OnMenuItemClickListener, Sea
         if (dataUris.isEmpty()) return
         val activity = activity as MainActivity
         try {
-            ProfileManager.createProfilesFromJson(dataUris.asSequence().map {
-                activity.contentResolver.openInputStream(it)
-            }.filterNotNull(), replace)
+            ProfileManager.createProfilesFromJson(
+                dataUris.asSequence().map {
+                    activity.contentResolver.openInputStream(it)
+                }.filterNotNull(),
+                replace,
+            )
         } catch (e: Exception) {
             activity.snackbar(e.readableMessage).show()
         }
@@ -468,21 +496,23 @@ class ProfilesFragment : ToolbarFragment(), Toolbar.OnMenuItemClickListener, Sea
     private val importProfiles = registerForActivityResult(OpenJson) { importOrReplaceProfiles(it) }
     private val replaceProfiles = registerForActivityResult(OpenJson) { importOrReplaceProfiles(it, true) }
     private val exportProfiles = registerForActivityResult(SaveJson) { data ->
-        if (data != null) ProfileManager.serializeToJson()?.let { profiles ->
-            val activity = activity as MainActivity
-            try {
-                activity.contentResolver.openOutputStream(data)!!.bufferedWriter().use {
-                    it.write(profiles.toString(2))
+        if (data != null) {
+            ProfileManager.serializeToJson()?.let { profiles ->
+                val activity = activity as MainActivity
+                try {
+                    activity.contentResolver.openOutputStream(data)!!.bufferedWriter().use {
+                        it.write(profiles.toString(2))
+                    }
+                } catch (e: Exception) {
+                    Timber.w(e)
+                    activity.snackbar(e.readableMessage).show()
                 }
-            } catch (e: Exception) {
-                Timber.w(e)
-                activity.snackbar(e.readableMessage).show()
             }
         }
     }
 
     fun onTrafficUpdated(profileId: Long, stats: TrafficStats) {
-        if (profileId != 0L) {  // ignore aggregate stats
+        if (profileId != 0L) { // ignore aggregate stats
             statsCache.put(profileId, stats)
             profilesAdapter.refreshId(profileId)
         }

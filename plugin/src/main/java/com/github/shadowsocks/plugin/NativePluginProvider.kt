@@ -60,8 +60,13 @@ abstract class NativePluginProvider : ContentProvider() {
      */
     protected abstract fun populateFiles(provider: PathProvider)
 
-    override fun query(uri: Uri, projection: Array<out String>?, selection: String?, selectionArgs: Array<out String>?,
-                       sortOrder: String?): Cursor? {
+    override fun query(
+        uri: Uri,
+        projection: Array<out String>?,
+        selection: String?,
+        selectionArgs: Array<out String>?,
+        sortOrder: String?,
+    ): Cursor? {
         check(selection == null && selectionArgs == null && sortOrder == null)
         val result = MatrixCursor(projection)
         populateFiles(PathProvider(uri, result))
@@ -96,7 +101,7 @@ abstract class NativePluginProvider : ContentProvider() {
     // Methods that should not be used
     override fun insert(uri: Uri, values: ContentValues?): Uri? = throw UnsupportedOperationException()
     override fun update(uri: Uri, values: ContentValues?, selection: String?, selectionArgs: Array<out String>?): Int =
-            throw UnsupportedOperationException()
+        throw UnsupportedOperationException()
     override fun delete(uri: Uri, selection: String?, selectionArgs: Array<out String>?): Int =
-            throw UnsupportedOperationException()
+        throw UnsupportedOperationException()
 }

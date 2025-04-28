@@ -32,9 +32,11 @@ class PathProvider internal constructor(baseUri: Uri, private val cursor: Matrix
 
     fun addPath(path: String, mode: Int = 0b110100100): PathProvider {
         val trimmed = path.trim('/')
-        if (trimmed.startsWith(basePath)) cursor.newRow()
+        if (trimmed.startsWith(basePath)) {
+            cursor.newRow()
                 .add(PluginContract.COLUMN_PATH, trimmed)
                 .add(PluginContract.COLUMN_MODE, mode)
+        }
         return this
     }
     fun addTo(file: File, to: String = "", mode: Int = 0b110100100): PathProvider {
@@ -42,7 +44,9 @@ class PathProvider internal constructor(baseUri: Uri, private val cursor: Matrix
         if (basePath.startsWith(sub)) if (file.isDirectory) {
             sub += '/'
             file.listFiles()!!.forEach { addTo(it, sub, mode) }
-        } else addPath(sub, mode)
+        } else {
+            addPath(sub, mode)
+        }
         return this
     }
     fun addAt(file: File, at: String = "", mode: Int = 0b110100100): PathProvider {

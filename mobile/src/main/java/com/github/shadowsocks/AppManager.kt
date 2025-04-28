@@ -68,32 +68,38 @@ class AppManager : AppCompatActivity() {
         private var receiver: BroadcastReceiver? = null
         private var cachedApps: Map<String, PackageInfo>? = null
         private fun getCachedApps(pm: PackageManager) = synchronized(AppManager) {
-            if (receiver == null) receiver = app.listenForPackageChanges {
-                synchronized(AppManager) {
-                    receiver = null
-                    cachedApps = null
+            if (receiver == null) {
+                receiver = app.listenForPackageChanges {
+                    synchronized(AppManager) {
+                        receiver = null
+                        cachedApps = null
+                    }
+                    instance?.loadApps()
                 }
-                instance?.loadApps()
             }
             // Labels and icons can change on configuration (locale, etc.) changes, therefore they are not cached.
             val cachedApps = cachedApps ?: pm.getInstalledPackages(
-                    PackageManager.GET_PERMISSIONS or PackageManager.MATCH_UNINSTALLED_PACKAGES)
-                    .filter {
-                        when (it.packageName) {
-                            app.packageName -> false
-                            "android" -> true
-                            else -> it.requestedPermissions?.contains(Manifest.permission.INTERNET) == true
-                        }
+                PackageManager.GET_PERMISSIONS or PackageManager.MATCH_UNINSTALLED_PACKAGES,
+            )
+                .filter {
+                    when (it.packageName) {
+                        app.packageName -> false
+                        "android" -> true
+                        else -> it.requestedPermissions?.contains(Manifest.permission.INTERNET) == true
                     }
-                    .associateBy { it.packageName }
+                }
+                .associateBy { it.packageName }
             this.cachedApps = cachedApps
             cachedApps
         }
     }
 
-    private class ProxiedApp(private val pm: PackageManager, private val appInfo: ApplicationInfo,
-                             val packageName: String) {
-        val name: CharSequence = appInfo.loadLabel(pm)    // cached for sorting
+    private class ProxiedApp(
+        private val pm: PackageManager,
+        private val appInfo: ApplicationInfo,
+        val packageName: String,
+    ) {
+        val name: CharSequence = appInfo.loadLabel(pm) // cached for sorting
         val icon: Drawable get() = appInfo.loadIcon(pm)
         val uid get() = appInfo.uid
     }
@@ -147,15 +153,19 @@ class AppManager : AppCompatActivity() {
             onBindViewHolder(holder, position)
         }
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): AppViewHolder =
-                AppViewHolder(LayoutInflater.from(parent.context).inflate(R.layout.layout_apps_item, parent, false))
+            AppViewHolder(LayoutInflater.from(parent.context).inflate(R.layout.layout_apps_item, parent, false))
         override fun getItemCount(): Int = filteredApps.size
 
         private val filterImpl = object : Filter() {
             override fun performFiltering(constraint: CharSequence) = FilterResults().apply {
-                val filteredApps = if (constraint.isEmpty()) apps else apps.filter {
-                    it.name.contains(constraint, true) ||
+                val filteredApps = if (constraint.isEmpty()) {
+                    apps
+                } else {
+                    apps.filter {
+                        it.name.contains(constraint, true) ||
                             it.packageName.contains(constraint, true) ||
                             it.uid.toString().contains(constraint)
+                    }
                 }
                 count = filteredApps.size
                 values = filteredApps
@@ -279,14 +289,18 @@ class AppManager : AppCompatActivity() {
                     }
                     if (DataStore.directBootAware) DirectBoot.update()
                     Snackbar.make(list, R.string.action_apply_all, Snackbar.LENGTH_LONG).show()
-                } else Snackbar.make(list, R.string.action_export_err, Snackbar.LENGTH_LONG).show()
+                } else {
+                    Snackbar.make(list, R.string.action_export_err, Snackbar.LENGTH_LONG).show()
+                }
                 return true
             }
             R.id.action_export_clipboard -> {
                 val success = Core.trySetPrimaryClip("${DataStore.bypass}\n${DataStore.individual}")
-                Snackbar.make(list,
-                        if (success) R.string.action_export_msg else R.string.action_export_err,
-                        Snackbar.LENGTH_LONG).show()
+                Snackbar.make(
+                    list,
+                    if (success) R.string.action_export_msg else R.string.action_export_err,
+                    Snackbar.LENGTH_LONG,
+                ).show()
                 return true
             }
             R.id.action_import_clipboard -> {
@@ -296,7 +310,9 @@ class AppManager : AppCompatActivity() {
                     try {
                         val (enabled, apps) = if (i < 0) {
                             proxiedAppString to ""
-                        } else proxiedAppString.substring(0, i) to proxiedAppString.substring(i + 1)
+                        } else {
+                            proxiedAppString.substring(0, i) to proxiedAppString.substring(i + 1)
+                        }
                         bypassGroup.check(if (enabled.toBoolean()) R.id.btn_bypass else R.id.btn_on)
                         DataStore.individual = apps
                         DataStore.dirty = true
@@ -313,11 +329,13 @@ class AppManager : AppCompatActivity() {
     }
 
     override fun supportNavigateUpTo(upIntent: Intent) =
-            super.supportNavigateUpTo(upIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP))
+        super.supportNavigateUpTo(upIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP))
 
     override fun onKeyUp(keyCode: Int, event: KeyEvent?) = if (keyCode == KeyEvent.KEYCODE_MENU) {
         if (toolbar.isOverflowMenuShowing) toolbar.hideOverflowMenu() else toolbar.showOverflowMenu()
-    } else super.onKeyUp(keyCode, event)
+    } else {
+        super.onKeyUp(keyCode, event)
+    }
 
     override fun onDestroy() {
         instance = null
